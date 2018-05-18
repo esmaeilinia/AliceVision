@@ -544,7 +544,7 @@ __global__ void refine_compYKNCCSimMapPatch_kernel_A(
         {
             float3 p = get3DPointForPixelAndDepthFromRC(pix, depth);
             // move3DPointByTcPixStep(p, tcStep);
-            move3DPointByTcOrRcPixStep(pix, p, tcStep, moveByTcOrRc);
+            move3DPointByTcOrRcPixStep(p, tcStep, moveByTcOrRc);
 
             patch ptch;
             ptch.p = p;
@@ -596,7 +596,7 @@ __global__ void refine_compUpdateYKNCCSimMapPatch_kernel(
         {
             float3 p = get3DPointForPixelAndDepthFromRC(pix, odpt);
             // move3DPointByTcPixStep(p, tcStep);
-            move3DPointByTcOrRcPixStep(pix, p, tcStep, moveByTcOrRc);
+            move3DPointByTcOrRcPixStep(p, tcStep, moveByTcOrRc);
 
             odpt = size(p - sg_s_rC);
 
@@ -662,7 +662,7 @@ __global__ void refine_compUpdateYKNCCSimMapPatch_kernel(
         {
             float3 p = get3DPointForPixelAndDepthFromRC(pix, odpt);
             // move3DPointByTcPixStep(p, tcStep);
-            move3DPointByTcOrRcPixStep(pix, p, tcStep, moveByTcOrRc);
+            move3DPointByTcOrRcPixStep(p, tcStep, moveByTcOrRc);
 
             odpt = size(p - sg_s_rC);
 
@@ -714,7 +714,7 @@ __global__ void refine_coputeDepthStepMap_kernel(float* depthStepMap, int depthS
         {
             float3 p = get3DPointForPixelAndDepthFromRC(pix, depth);
             float3 p1 = p;
-            move3DPointByTcOrRcPixStep(pix, p1, 1.0f, moveByTcOrRc);
+            move3DPointByTcOrRcPixStep(p1, 1.0f, moveByTcOrRc);
             depthStep = size(p - p1);
         };
         depthStepMap[y * depthStepMap_p + x] = depthStep;
@@ -741,7 +741,7 @@ __global__ void refine_compYKNCCDepthSimMapPatch_kernel(float2* oDepthSimMap, in
         {
             float3 p = get3DPointForPixelAndDepthFromRC(pix, depth);
             // move3DPointByTcPixStep(p, tcStep);
-            move3DPointByTcOrRcPixStep(pix, p, tcStep, moveByTcOrRc);
+            move3DPointByTcOrRcPixStep(p, tcStep, moveByTcOrRc);
 
             patch ptch;
             ptch.p = p;
@@ -779,7 +779,7 @@ __global__ void refine_compYKNCCSimMapPatch_kernel(
         {
             float3 p = get3DPointForPixelAndDepthFromRC(pix, depth);
             // move3DPointByTcPixStep(p, tcStep);
-            move3DPointByTcOrRcPixStep(pix, p, tcStep, moveByTcOrRc);
+            move3DPointByTcOrRcPixStep(p, tcStep, moveByTcOrRc);
 
             patch ptch;
             ptch.p = p;
@@ -871,8 +871,8 @@ __global__ void refine_computeDepthSimMapFromLastThreeSimsMap_kernel(float* osim
             float3 pMid = get3DPointForPixelAndDepthFromRC(pix, midDepth);
             float3 pm1 = pMid;
             float3 pp1 = pMid;
-            move3DPointByTcOrRcPixStep(pix, pm1, -1.0f, moveByTcOrRc);
-            move3DPointByTcOrRcPixStep(pix, pp1, +1.0f, moveByTcOrRc);
+            move3DPointByTcOrRcPixStep(pm1, -1.0f, moveByTcOrRc);
+            move3DPointByTcOrRcPixStep(pp1, +1.0f, moveByTcOrRc);
 
             float3 depths;
             depths.x = size(pm1 - sg_s_rC);
@@ -981,7 +981,7 @@ __global__ void refine_computeDepthSimMapFromBestStatMap_kernel(float* simMap, i
             float3 porig = get3DPointForPixelAndDepthFromRC(pix, outDepth);
             float3 p = porig;
             // move3DPointByTcPixStep(p, tcStep);
-            move3DPointByTcOrRcPixStep(pix, p, tcStep, moveByTcOrRc);
+            move3DPointByTcOrRcPixStep(p, tcStep, moveByTcOrRc);
             outDepth = size(p - sg_s_rC);
 
             if((stat.x < 1.1f) && (stat.z < 1.1f))
@@ -990,9 +990,9 @@ __global__ void refine_computeDepthSimMapFromBestStatMap_kernel(float* simMap, i
                 float3 pm1 = porig;
                 float3 pp1 = porig;
                 // move3DPointByTcPixStep(pm1, tcStep-1.0f);
-                move3DPointByTcOrRcPixStep(pix, pm1, tcStep - 1.0f, moveByTcOrRc);
+                move3DPointByTcOrRcPixStep(pm1, tcStep - 1.0f, moveByTcOrRc);
                 // move3DPointByTcPixStep(pp1, tcStep+1.0f);
-                move3DPointByTcOrRcPixStep(pix, pp1, tcStep + 1.0f, moveByTcOrRc);
+                move3DPointByTcOrRcPixStep(pp1, tcStep + 1.0f, moveByTcOrRc);
 
                 depths.x = size(pm1 - sg_s_rC);
                 depths.y = outDepth;

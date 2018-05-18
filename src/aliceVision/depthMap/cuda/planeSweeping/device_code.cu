@@ -143,7 +143,7 @@ __device__ void move3DPointByTcPixStep(float3& p, float tcPixStep)
     p = triangulateMatchRef(rp, tpd);
 }
 
-__device__ float move3DPointByTcOrRcPixStep(int2& pix, float3& p, float pixStep, bool moveByTcOrRc)
+__device__ float move3DPointByTcOrRcPixStep(float3& p, float pixStep, bool moveByTcOrRc)
 {
     if(moveByTcOrRc == true)
     {
