@@ -28,7 +28,7 @@ extern texture<unsigned char, 2, cudaReadModeNormalizedFloat> btex;
 
 extern texture<uchar4, 2, cudaReadModeNormalizedFloat> r4tex;
 extern texture<uchar4, 2, cudaReadModeNormalizedFloat> t4tex;
-extern texture<float, 1, cudaReadModeElementType> gaussianTex;
+// extern texture<float, 1, cudaReadModeElementType> gaussianTex;
 
 extern texture<unsigned char, 2, cudaReadModeNormalizedFloat> wshtex;
 extern texture<float, 2, cudaReadModeElementType> watex;

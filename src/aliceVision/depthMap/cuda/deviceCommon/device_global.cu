@@ -21,7 +21,7 @@ texture<unsigned char, 2, cudaReadModeNormalizedFloat> btex;
 
 texture<uchar4, 2, cudaReadModeNormalizedFloat> r4tex;
 texture<uchar4, 2, cudaReadModeNormalizedFloat> t4tex;
-texture<float, 1, cudaReadModeElementType> gaussianTex;
+// texture<float, 1, cudaReadModeElementType> gaussianTex;
 
 texture<unsigned char, 2, cudaReadModeNormalizedFloat> wshtex;
 texture<float, 2, cudaReadModeElementType> watex;

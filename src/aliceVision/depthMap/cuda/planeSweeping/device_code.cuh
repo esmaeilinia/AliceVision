@@ -207,10 +207,12 @@ __global__ void updateBestDepth_kernel(
     int width, int height, int step, float fpPlaneDepth, int d);
 
 __global__ void downscale_bilateral_smooth_lab_kernel(
+    cudaTextureObject_t gaussianTex,
     uchar4* texLab, int texLab_p,
     int width, int height, int scale, int radius, float gammaC);
 
 __global__ void downscale_gauss_smooth_lab_kernel(
+    cudaTextureObject_t gaussianTex,
     uchar4* texLab, int texLab_p,
     int width, int height, int scale, int radius);
 

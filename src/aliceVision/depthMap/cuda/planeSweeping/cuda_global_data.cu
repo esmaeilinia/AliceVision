@@ -5,23 +5,9 @@
 
 #include "aliceVision/depthMap/cuda/planeSweeping/cuda_global_data.cuh"
 
-// #include "aliceVision/depthMap/cuda/commonStructures.hpp"
-
-// #include "aliceVision/depthMap/cuda/planeSweeping/device_code.cuh"
-// #include "aliceVision/depthMap/cuda/planeSweeping/device_code_refine.cuh"
-// #include "aliceVision/depthMap/cuda/planeSweeping/device_code_volume.cuh"
-// #include "aliceVision/depthMap/cuda/planeSweeping/device_code_fuse.cuh"
-
 #include "aliceVision/depthMap/cuda/deviceCommon/device_color.cuh"
-// #include "aliceVision/depthMap/cuda/deviceCommon/device_patch_es.cuh"
-// #include "aliceVision/depthMap/cuda/deviceCommon/device_eig33.cuh"
-// #include "aliceVision/depthMap/cuda/deviceCommon/device_global.cuh"
 
-// #include <math_constants.h>
 #include <iostream>
-// #include <map>
-
-// #include <algorithm>
 
 // Macro for checking cuda errors
 #define CHECK_CUDA_ERROR()                                                    \

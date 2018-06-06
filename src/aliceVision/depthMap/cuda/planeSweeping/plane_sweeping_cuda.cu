@@ -351,7 +351,6 @@ void ps_deviceUpdateCam(CudaArray<uchar4, 2>** ps_texs_arr, cameraStruct* cam, i
     {
         int radius = scale + 1;
         GaussianArray* gaussian_arr = ps_create_gaussian_arr(1.0f, radius);
-        cudaBindTextureToArray(gaussianTex, gaussian_arr->arr, cudaCreateChannelDesc<float>());
 
         int block_size = 8;
         dim3 block(block_size, block_size, 1);
@@ -361,6 +360,7 @@ void ps_deviceUpdateCam(CudaArray<uchar4, 2>** ps_texs_arr, cameraStruct* cam, i
         // downscale_bilateral_smooth_lab_kernel<<<grid, block>>>(
         downscale_gauss_smooth_lab_kernel<<<grid, block>>>(
             // downscale_mean_smooth_lab_kernel<<<grid, block>>>(
+            gaussian_arr->tex,
             tex_lab_dmp.getBuffer(), tex_lab_dmp.stride()[0], w / (scale + 1), h / (scale + 1), scale + 1,
             radius //, 15.5f
             );
@@ -379,9 +379,6 @@ void ps_deviceUpdateCam(CudaArray<uchar4, 2>** ps_texs_arr, cameraStruct* cam, i
             copy((*ps_texs_arr[camId * scales + scale]), tex_lab_dmp);
             cudaBindTextureToArray(r4tex, ps_texs_arr[camId * scales + 0]->getArray(), cudaCreateChannelDesc<uchar4>());
         };
-
-        cudaUnbindTexture(gaussianTex);
-        // cudaFreeArray(gaussian_arr);
     };
 
     cudaUnbindTexture(r4tex);
