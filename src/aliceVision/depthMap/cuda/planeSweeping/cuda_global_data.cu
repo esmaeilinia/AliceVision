@@ -103,6 +103,78 @@ GaussianArray* GlobalData::getGaussianArray( float delta, int radius )
     return a;
 }
 
+void GlobalData::allocScaledPictureArrays( int scales, int ncams, int width, int height )
+{
+    _scaled_picture_scales = scales;
+
+    _scaled_picture_array.resize( scales * ncams );
+    _scaled_picture_tex  .resize( scales * ncams );
+
+    cudaResourceDesc res_desc;
+    res_desc.resType = cudaResourceTypeArray;
+
+    cudaTextureDesc      tex_desc;
+    memset(&tex_desc, 0, sizeof(cudaTextureDesc));
+    tex_desc.normalizedCoords = 0; // addressed (x,y) in [width,height]
+    tex_desc.addressMode[0]   = cudaAddressModeClamp;
+    tex_desc.addressMode[1]   = cudaAddressModeClamp;
+    tex_desc.addressMode[2]   = cudaAddressModeClamp;
+    tex_desc.readMode         = cudaReadModeNormalizedFloat;
+    tex_desc.filterMode       = cudaFilterModeLinear;
+
+    for( int c=0; c<ncams; c++ )
+    {
+        for( int s=0; s<scales; s++ )
+        {
+            int w = width / (s + 1);
+            int h = height / (s + 1);
+            _scaled_picture_array[ c * scales + s ] = new CudaArray<uchar4, 2>( CudaSize<2>( w, h ) );
+
+            res_desc.res.array.array = _scaled_picture_array[ c * scales + s ]->getArray();
+
+            cudaCreateTextureObject( &_scaled_picture_tex[ c * scales + s ],
+                                     &res_desc,
+                                     &tex_desc,
+                                     0 );
+        }
+    }
+
+}
+
+void GlobalData::freeScaledPictureArrays( )
+{
+    _scaled_picture_scales = 0;
+
+    for( CudaArray<uchar4,2>* ptr : _scaled_picture_array )
+    {
+        delete ptr;
+    }
+
+    _scaled_picture_array.clear();
+
+    for( cudaTextureObject_t& obj : _scaled_picture_tex )
+    {
+        cudaDestroyTextureObject( obj );
+    }
+
+    _scaled_picture_tex.clear();
+}
+
+CudaArray<uchar4,2>* GlobalData::getScaledPictureArrayPtr( int scale, int cam )
+{
+    return _scaled_picture_array[ cam * _scaled_picture_scales + scale ];
+}
+
+CudaArray<uchar4,2>& GlobalData::getScaledPictureArray( int scale, int cam )
+{
+    return *_scaled_picture_array[ cam * _scaled_picture_scales + scale ];
+}
+
+cudaTextureObject_t GlobalData::getScaledPictureTex( int scale, int cam )
+{
+    return _scaled_picture_tex[ cam * _scaled_picture_scales + scale ];
+}
+
 }; // namespace depthMap
 }; // namespace aliceVision
 

@@ -5,9 +5,12 @@
 
 #pragma once
 
+#include "aliceVision/depthMap/cuda/commonStructures.hpp"
+
 #include <cuda_runtime.h>
 
 #include <map>
+#include <vector>
 #include <algorithm>
 
 namespace aliceVision {
@@ -30,8 +33,18 @@ public:
 
     GaussianArray* getGaussianArray( float delta, int radius );
 
+    void                 allocScaledPictureArrays( int scales, int ncams, int width, int height );
+    void                 freeScaledPictureArrays( );
+    CudaArray<uchar4,2>* getScaledPictureArrayPtr( int scale, int cam );
+    CudaArray<uchar4,2>& getScaledPictureArray( int scale, int cam );
+    cudaTextureObject_t  getScaledPictureTex( int scale, int cam );
+
 private:
     std::map<GaussianArrayIndex,GaussianArray*> _gaussian_arr_table;
+
+    std::vector<CudaArray<uchar4, 2>*>          _scaled_picture_array;
+    std::vector<cudaTextureObject_t>            _scaled_picture_tex;
+    int                                         _scaled_picture_scales;
 };
 
 /*
