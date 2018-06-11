@@ -12,26 +12,14 @@
 namespace aliceVision {
 namespace depthMap {
 
-#if 0
-__device__ void volume_computePatch(patch& ptch, int depthid, int2& pix)
-{
-    float3 p;
-    float pixSize;
 
-    float fpPlaneDepth = tex2D(depthsTex, depthid, 0);
-    p = get3DPointForPixelAndFrontoParellePlaneRC(pix, fpPlaneDepth);
-    pixSize = computePixSize(p);
-
-    ptch.p = p;
-    ptch.d = pixSize;
-    computeRotCSEpip(ptch, p);
-}
-#endif
-
-__global__ void volume_slice_kernel(unsigned char* slice, int slice_p,
-                                    // float3* slicePts, int slicePts_p,
-                                    int nsearchdepths, int ndepths, int slicesAtTime, int width, int height, int wsh,
-                                    int t, int npixs, const float gammaC, const float gammaP, const float epipShift);
+__global__ void volume_slice_kernel(
+    cudaTextureObject_t r4tex,
+    cudaTextureObject_t t4tex,
+    unsigned char* slice, int slice_p,
+    // float3* slicePts, int slicePts_p,
+    int nsearchdepths, int ndepths, int slicesAtTime, int width, int height, int wsh,
+    int t, int npixs, const float gammaC, const float gammaP, const float epipShift);
 
 __global__ void volume_saveSliceToVolume_kernel(unsigned char* volume, int volume_s, int volume_p, unsigned char* slice,
                                                 int slice_p, int nsearchdepths, int ndepths, int slicesAtTime,
@@ -144,14 +132,16 @@ __global__ void volume_computeBestXSliceUInt_kernel(unsigned int* xsliceBestInCo
  * @param[in] xSliceBestInColCst
  * @param[out] volSimT output similarity volume
  */
-__global__ void volume_agregateCostVolumeAtZinSlices_kernel(unsigned int* xySliceForZ, int xySliceForZ_p,
-                                                            const unsigned int* xySliceForZM1, int xySliceForZM1_p,
-                                                            const unsigned int* xSliceBestInColSimForZM1,
-                                                            unsigned char* volSimT, int volSimT_s, int volSimT_p, 
-                                                            int volDimX, int volDimY, int volDimZ, 
-                                                            int vz, unsigned int _P1, unsigned int _P2,
-                                                            bool transfer, int volLUX, int volLUY,
-                                                            int dimTrnX, bool doInvZ);
+__global__ void volume_agregateCostVolumeAtZinSlices_kernel(
+                    cudaTextureObject_t r4tex,
+                    unsigned int* xySliceForZ, int xySliceForZ_p,
+                    const unsigned int* xySliceForZM1, int xySliceForZM1_p,
+                    const unsigned int* xSliceBestInColSimForZM1,
+                    unsigned char* volSimT, int volSimT_s, int volSimT_p, 
+                    int volDimX, int volDimY, int volDimZ, 
+                    int vz, unsigned int _P1, unsigned int _P2,
+                    bool transfer, int volLUX, int volLUY,
+                    int dimTrnX, bool doInvZ);
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

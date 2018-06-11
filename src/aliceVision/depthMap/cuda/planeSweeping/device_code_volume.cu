@@ -30,10 +30,13 @@ __device__ void volume_computePatch(patch& ptch, int depthid, int2& pix)
     computeRotCSEpip(ptch, p);
 }
 
-__global__ void volume_slice_kernel(unsigned char* slice, int slice_p,
-                                    // float3* slicePts, int slicePts_p,
-                                    int nsearchdepths, int ndepths, int slicesAtTime, int width, int height, int wsh,
-                                    int t, int npixs, const float gammaC, const float gammaP, const float epipShift)
+__global__ void volume_slice_kernel(
+    cudaTextureObject_t r4tex,
+    cudaTextureObject_t t4tex,
+    unsigned char* slice, int slice_p,
+    // float3* slicePts, int slicePts_p,
+    int nsearchdepths, int ndepths, int slicesAtTime, int width, int height, int wsh,
+    int t, int npixs, const float gammaC, const float gammaP, const float epipShift)
 {
     int sdptid = blockIdx.x * blockDim.x + threadIdx.x;
     int pixid = blockIdx.y * blockDim.y + threadIdx.y;
@@ -49,7 +52,7 @@ __global__ void volume_slice_kernel(unsigned char* slice, int slice_p,
             patch ptcho;
             volume_computePatch(ptcho, depthid, pix);
 
-            float fsim = compNCCby3DptsYK(ptcho, wsh, width, height, gammaC, gammaP, epipShift);
+            float fsim = compNCCby3DptsYK( r4tex, t4tex, ptcho, wsh, width, height, gammaC, gammaP, epipShift);
             // unsigned char sim = (unsigned char)(((fsim+1.0f)/2.0f)*255.0f);
 
             float fminVal = -1.0f;
@@ -220,14 +223,16 @@ __global__ void volume_computeBestXSliceUInt_kernel(unsigned int* xsliceBestInCo
  * @param[in] xSliceBestInColCst
  * @param[out] volSimT output similarity volume
  */
-__global__ void volume_agregateCostVolumeAtZinSlices_kernel(unsigned int* xySliceForZ, int xySliceForZ_p,
-                                                            const unsigned int* xySliceForZM1, int xySliceForZM1_p,
-                                                            const unsigned int* xSliceBestInColSimForZM1,
-                                                            unsigned char* volSimT, int volSimT_s, int volSimT_p, 
-                                                            int volDimX, int volDimY, int volDimZ, 
-                                                            int vz, unsigned int _P1, unsigned int _P2,
-                                                            bool transfer, int volLUX, int volLUY,
-                                                            int dimTrnX, bool doInvZ)
+__global__ void volume_agregateCostVolumeAtZinSlices_kernel(
+    cudaTextureObject_t r4tex,
+    unsigned int* xySliceForZ, int xySliceForZ_p,
+    const unsigned int* xySliceForZM1, int xySliceForZM1_p,
+    const unsigned int* xSliceBestInColSimForZM1,
+    unsigned char* volSimT, int volSimT_s, int volSimT_p, 
+    int volDimX, int volDimY, int volDimZ, 
+    int vz, unsigned int _P1, unsigned int _P2,
+    bool transfer, int volLUX, int volLUY,
+    int dimTrnX, bool doInvZ)
 {
     int vx = blockIdx.x * blockDim.x + threadIdx.x;
     int vy = blockIdx.y * blockDim.y + threadIdx.y;
@@ -246,8 +251,8 @@ __global__ void volume_agregateCostVolumeAtZinSlices_kernel(unsigned int* xySlic
             int imY0 = volLUY + (dimTrnX == 0) ?  z : vx;
             int imX1 = volLUX + (dimTrnX == 0) ? vx : z1; // M1
             int imY1 = volLUY + (dimTrnX == 0) ? z1 : vx;
-            float4 gcr0 = 255.0f * tex2D(r4tex, (float)imX0 + 0.5f, (float)imY0 + 0.5f);
-            float4 gcr1 = 255.0f * tex2D(r4tex, (float)imX1 + 0.5f, (float)imY1 + 0.5f);
+            float4 gcr0 = 255.0f * tex2D<float4>(r4tex, (float)imX0 + 0.5f, (float)imY0 + 0.5f);
+            float4 gcr1 = 255.0f * tex2D<float4>(r4tex, (float)imX1 + 0.5f, (float)imY1 + 0.5f);
             float deltaC = Euclidean3(gcr0, gcr1);
             // unsigned int P1 = (unsigned int)sigmoid(5.0f,20.0f,60.0f,10.0f,deltaC);
             unsigned int P1 = _P1;

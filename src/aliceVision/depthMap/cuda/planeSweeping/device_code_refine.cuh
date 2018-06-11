@@ -33,15 +33,25 @@ __global__ void refine_computeDepthsMapFromDepthMap_kernel(float3* depthsMap, in
                                                            int depthMap_p, int width, int height, bool moveByTcOrRc,
                                                            float step);
 
-__global__ void refine_reprojTarTexLABByDepthsMap_kernel(float3* depthsMap, int depthsMap_p, uchar4* tex, int tex_p,
-                                                         int width, int height, int id);
+__global__ void refine_reprojTarTexLABByDepthsMap_kernel(
+    cudaTextureObject_t t4tex,
+    float3* depthsMap, int depthsMap_p,
+    uchar4* tex, int tex_p,
+    int width, int height, int id);
 
-__global__ void refine_reprojTarTexLABByDepthMap_kernel(float* depthMap, int depthMap_p, uchar4* tex, int tex_p,
-                                                        int width, int height);
 
-__global__ void refine_reprojTarTexLABByDepthMapMovedByStep_kernel(float* depthMap, int depthMap_p, uchar4* tex,
-                                                                   int tex_p, int width, int height, bool moveByTcOrRc,
-                                                                   float step);
+__global__ void refine_reprojTarTexLABByDepthMap_kernel(
+    cudaTextureObject_t t4tex,
+    float* depthMap, int depthMap_p,
+    uchar4* tex, int tex_p,
+    int width, int height);
+
+__global__ void refine_reprojTarTexLABByDepthMapMovedByStep_kernel(
+    cudaTextureObject_t t4tex,
+    float* depthMap, int depthMap_p,
+    uchar4* tex, int tex_p,
+    int width, int height, bool moveByTcOrRc,
+    float step);
 
 __global__ void refine_compYKNCCSimMap_kernel(float* osimMap, int osimMap_p, float* depthMap, int depthMap_p, int width,
                                               int height, int wsh, const float gammaC, const float gammaP);
@@ -63,6 +73,8 @@ __global__ void refine_fuseThreeDepthSimMaps_kernel(float* osim, int osim_p, flo
 
 #ifdef GRIFF_TEST
 __global__ void refine_compYKNCCSimMapPatch_kernel_A(
+    cudaTextureObject_t r4tex,
+    cudaTextureObject_t t4tex,
     const float* depthMap, int depthMap_p,
     int width, int height, int wsh, const float gammaC,
     const float gammaP, const float epipShift, const float tcStep,
@@ -72,6 +84,8 @@ __global__ void refine_compYKNCCSimMapPatch_kernel_A(
 
 #ifdef GRIFF_TEST
 __global__ void refine_compUpdateYKNCCSimMapPatch_kernel(
+    cudaTextureObject_t r4tex,
+    cudaTextureObject_t t4tex,
     float* osimMap, int osimMap_p,
     float* odptMap, int odptMap_p,
     const float* depthMap, int depthMap_p, int width, int height,
@@ -82,6 +96,8 @@ __global__ void refine_compUpdateYKNCCSimMapPatch_kernel(
     float3* lastThreeSimsMap, int lastThreeSimsMap_p );
 #else
 __global__ void refine_compUpdateYKNCCSimMapPatch_kernel(
+    cudaTextureObject_t r4tex,
+    cudaTextureObject_t t4tex,
     float* osimMap, int osimMap_p,
     float* odptMap, int odptMap_p,
     const float* depthMap, int depthMap_p, int width, int height,
@@ -95,22 +111,31 @@ __global__ void refine_compUpdateYKNCCSimMapPatch_kernel(
 __global__ void refine_coputeDepthStepMap_kernel(float* depthStepMap, int depthStepMap_p, float* depthMap,
                                                  int depthMap_p, int width, int height, bool moveByTcOrRc);
 
-__global__ void refine_compYKNCCDepthSimMapPatch_kernel(float2* oDepthSimMap, int oDepthSimMap_p, float* depthMap,
-                                                        int depthMap_p, int width, int height, int wsh,
-                                                        const float gammaC, const float gammaP, const float epipShift,
-                                                        const float tcStep, bool moveByTcOrRc);
+__global__ void refine_compYKNCCDepthSimMapPatch_kernel(
+    cudaTextureObject_t r4tex,
+    cudaTextureObject_t t4tex,
+    float2* oDepthSimMap, int oDepthSimMap_p, float* depthMap,
+    int depthMap_p, int width, int height, int wsh,
+    const float gammaC, const float gammaP, const float epipShift,
+    const float tcStep, bool moveByTcOrRc);
 
 __global__ void refine_compYKNCCSimMapPatch_kernel(
+    cudaTextureObject_t r4tex,
+    cudaTextureObject_t t4tex,
     float* osimMap, int osimMap_p,
     const float* depthMap, int depthMap_p,
     int width, int height, int wsh, const float gammaC,
     const float gammaP, const float epipShift, const float tcStep,
     bool moveByTcOrRc, int xFrom, int imWidth, int imHeight);
 
-__global__ void refine_compYKNCCSimMapPatchDMS_kernel(float* osimMap, int osimMap_p, float* depthMap, int depthMap_p,
-                                                      int width, int height, int wsh, const float gammaC,
-                                                      const float gammaP, const float epipShift,
-                                                      const float depthMapShift);
+__global__ void refine_compYKNCCSimMapPatchDMS_kernel(
+    cudaTextureObject_t r4tex,
+    cudaTextureObject_t t4tex,
+    float* osimMap, int osimMap_p,
+    float* depthMap, int depthMap_p,
+    int width, int height, int wsh, const float gammaC,
+    const float gammaP, const float epipShift,
+    const float depthMapShift);
 
 __global__ void refine_setLastThreeSimsMap_kernel(float3* lastThreeSimsMap, int lastThreeSimsMap_p, float* simMap,
                                                   int simMap_p, int width, int height, int id);
@@ -131,24 +156,12 @@ __global__ void refine_computeDepthSimMapFromBestStatMap_kernel(float* simMap, i
                                                                 int depthMap_p, float4* bestStatMap, int bestStatMap_p,
                                                                 int width, int height, bool moveByTcOrRc);
 
-__global__ void refine_reprojTarTexLABByRcTcDepthsMap_kernel(uchar4* tex, int tex_p, float* rcDepthMap,
-                                                             int rcDepthMap_p, int width, int height,
-                                                             float depthMapShift);
-
-#if 0
-inline static __device__ double refine_convolveGaussSigma2(float* Im)
-{
-    double sum = 0.0;
-    for(int yp = -2; yp <= +2; yp++)
-    {
-        for(int xp = -2; xp <= +2; xp++)
-        {
-            sum = sum + (double)Im[(xp + 2) * 5 + yp + 2] * (double)gauss5[yp + 2] * (double)gauss5[xp + 2];
-        };
-    };
-    return sum;
-}
-#endif
+__global__ void refine_reprojTarTexLABByRcTcDepthsMap_kernel(
+    cudaTextureObject_t t4tex,
+    uchar4* tex, int tex_p,
+    float* rcDepthMap, int rcDepthMap_p,
+    int width, int height,
+    float depthMapShift);
 
 __global__ void refine_compPhotoErr_kernel(float* osimMap, int osimMap_p, float* depthMap, int depthMap_p, int width,
                                            int height, double beta);
@@ -157,65 +170,6 @@ __global__ void refine_compPhotoErrStat_kernel(float* occMap, int occMap_p, floa
                                                float* depthMap, int depthMap_p, int width, int height, double beta);
 
 __global__ void refine_compPhotoErrABG_kernel(float* osimMap, int osimMap_p, int width, int height);
-
-#if 0
-__device__ float2 ComputeSobelTarIm(int x, int y)
-{
-    unsigned char ul = 255.0f * tex2D(tTexU4, x - 1, y - 1).x; // upper left
-    unsigned char um = 255.0f * tex2D(tTexU4, x + 0, y - 1).x; // upper middle
-    unsigned char ur = 255.0f * tex2D(tTexU4, x + 1, y - 1).x; // upper right
-    unsigned char ml = 255.0f * tex2D(tTexU4, x - 1, y + 0).x; // middle left
-    unsigned char mm = 255.0f * tex2D(tTexU4, x + 0, y + 0).x; // middle (unused)
-    unsigned char mr = 255.0f * tex2D(tTexU4, x + 1, y + 0).x; // middle right
-    unsigned char ll = 255.0f * tex2D(tTexU4, x - 1, y + 1).x; // lower left
-    unsigned char lm = 255.0f * tex2D(tTexU4, x + 0, y + 1).x; // lower middle
-    unsigned char lr = 255.0f * tex2D(tTexU4, x + 1, y + 1).x; // lower right
-
-    int Horz = ur + 2 * mr + lr - ul - 2 * ml - ll;
-    int Vert = ul + 2 * um + ur - ll - 2 * lm - lr;
-    return make_float2((float)Vert, (float)Horz);
-}
-
-__device__ float2 DPIXTCDRC(const float3& P)
-{
-    float M3P = sg_s_tP[2] * P.x + sg_s_tP[5] * P.y + sg_s_tP[8] * P.z + sg_s_tP[11];
-    float M3P2 = M3P * M3P;
-
-    float m11 = ((sg_s_tP[0] * sg_s_tP[5] - sg_s_tP[2] * sg_s_tP[3]) * P.y +
-                 (sg_s_tP[0] * sg_s_tP[8] - sg_s_tP[2] * sg_s_tP[6]) * P.z +
-                 (sg_s_tP[0] * sg_s_tP[11] - sg_s_tP[2] * sg_s_tP[9])) /
-                M3P2;
-    float m12 = ((sg_s_tP[3] * sg_s_tP[2] - sg_s_tP[5] * sg_s_tP[0]) * P.x +
-                 (sg_s_tP[3] * sg_s_tP[8] - sg_s_tP[5] * sg_s_tP[6]) * P.z +
-                 (sg_s_tP[3] * sg_s_tP[11] - sg_s_tP[5] * sg_s_tP[9])) /
-                M3P2;
-    float m13 = ((sg_s_tP[6] * sg_s_tP[2] - sg_s_tP[8] * sg_s_tP[0]) * P.x +
-                 (sg_s_tP[6] * sg_s_tP[5] - sg_s_tP[8] * sg_s_tP[3]) * P.y +
-                 (sg_s_tP[6] * sg_s_tP[11] - sg_s_tP[8] * sg_s_tP[9])) /
-                M3P2;
-
-    float m21 = ((sg_s_tP[1] * sg_s_tP[5] - sg_s_tP[2] * sg_s_tP[4]) * P.y +
-                 (sg_s_tP[1] * sg_s_tP[8] - sg_s_tP[2] * sg_s_tP[7]) * P.z +
-                 (sg_s_tP[1] * sg_s_tP[11] - sg_s_tP[2] * sg_s_tP[10])) /
-                M3P2;
-    float m22 = ((sg_s_tP[4] * sg_s_tP[2] - sg_s_tP[5] * sg_s_tP[1]) * P.x +
-                 (sg_s_tP[4] * sg_s_tP[8] - sg_s_tP[5] * sg_s_tP[7]) * P.z +
-                 (sg_s_tP[4] * sg_s_tP[11] - sg_s_tP[5] * sg_s_tP[10])) /
-                M3P2;
-    float m23 = ((sg_s_tP[7] * sg_s_tP[2] - sg_s_tP[8] * sg_s_tP[1]) * P.x +
-                 (sg_s_tP[7] * sg_s_tP[5] - sg_s_tP[8] * sg_s_tP[4]) * P.y +
-                 (sg_s_tP[7] * sg_s_tP[11] - sg_s_tP[8] * sg_s_tP[10])) /
-                M3P2;
-
-    float3 _drc = P - sg_s_rC;
-
-    float2 op;
-    op.x = m11 * _drc.x + m12 * _drc.y + m13;
-    op.y = m21 * _drc.x + m22 * _drc.y + m23;
-
-    return op;
-};
-#endif
 
 __global__ void refine_reprojTarSobelAndDPIXTCDRCRcTcDepthsMap_kernel(float4* tex, int tex_p, float* rcDepthMap,
                                                                       int rcDepthMap_p, int width, int height,

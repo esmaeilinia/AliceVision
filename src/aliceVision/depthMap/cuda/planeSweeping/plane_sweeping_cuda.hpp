@@ -289,6 +289,7 @@ void ps_refineDepthMapInternal(
                     CudaDeviceMemoryPitched<uchar4, 2>& timg_dmp, bool moveByTcOrRc, float step);
 
 void ps_computeSimMapForDepthMapInternal(
+                    cudaTextureObject_t t4tex,
                     CudaDeviceMemoryPitched<float, 2>& osimMap_dmp,
                     CudaDeviceMemoryPitched<float, 2>& idepthMapMask_dmp, int width, int height,
                     bool verbose, int wsh, float gammaC, float gammaP,

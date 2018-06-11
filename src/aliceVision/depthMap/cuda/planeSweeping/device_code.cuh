@@ -22,12 +22,6 @@ namespace depthMap {
 
 // Global data handlers and parameters
 
-/*
-// defines
-texture<unsigned char, 2, cudaReadModeNormalizedFloat> rtex;
-texture<unsigned char, 2, cudaReadModeNormalizedFloat> ttex;
-*/
-
 #define DCT_DIMENSION 7
 
 #define MAX_CUDA_DEVICES 10
@@ -62,7 +56,7 @@ extern texture<float4, 2, cudaReadModeElementType> f4Tex;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 
-__global__ void compute_varLofLABtoW_kernel(uchar4* labMap, int labMap_p, int width, int height, int wsh);
+__global__ void compute_varLofLABtoW_kernel( cudaTextureObject_t r4tex, uchar4* labMap, int labMap_p, int width, int height, int wsh);
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -112,32 +106,42 @@ static __device__ float move3DPointByTcOrRcPixStep(float3& p, float pixStep, boo
     }
 }
 
-__global__ void slice_kernel(float* slice, int slice_p,
-                             // float3* slicePts, int slicePts_p,
-                             int ndepths, int slicesAtTime,
-                             int width, int height, int wsh, int t, int npixs,
-                             int maxDepth,
-                             bool doUsePixelsDepths, bool useTcOrRcPixSize, const float gammaC, const float gammaP,
-                             const float epipShift);
+__global__ void slice_kernel(
+    cudaTextureObject_t r4tex,
+    cudaTextureObject_t t4tex,
+    float* slice, int slice_p,
+    // float3* slicePts, int slicePts_p,
+    int ndepths, int slicesAtTime,
+    int width, int height, int wsh, int t, int npixs,
+    int maxDepth,
+    bool doUsePixelsDepths, bool useTcOrRcPixSize, const float gammaC, const float gammaP,
+    const float epipShift);
 
-__global__ void slice_fine_kernel(float* slice, int slice_p,
-                                  int ndepths, int slicesAtTime,
-                                  int width, int height, int wsh, int t, int npixs,
-                                  int maxDepth, const float gammaC, const float gammaP, const float epipShift);
+__global__ void slice_fine_kernel(
+    cudaTextureObject_t r4tex,
+    cudaTextureObject_t t4tex,
+    float* slice, int slice_p,
+    int ndepths, int slicesAtTime,
+    int width, int height, int wsh, int t, int npixs,
+    int maxDepth, const float gammaC, const float gammaP, const float epipShift);
 
 __global__ void smoothDepthMap_kernel(
+    cudaTextureObject_t r4tex,
     float* dmap, int dmap_p,
     int width, int height, int wsh, const float gammaC, const float gammaP);
 
 __global__ void filterDepthMap_kernel(
+    cudaTextureObject_t r4tex,
     float* dmap, int dmap_p,
     int width, int height, int wsh, const float gammaC, const float minCostThr);
 
 __global__ void alignSourceDepthMapToTarget_kernel(
+    cudaTextureObject_t r4tex,
     float* dmap, int dmap_p,
     int width, int height, int wsh, const float gammaC, const float maxPixelSizeDist);
 
 __global__ void computeNormalMap_kernel(
+    cudaTextureObject_t r4tex,
     float3* nmap, int nmap_p,
     int width, int height, int wsh, const float gammaC, const float gammaP);
 
@@ -166,11 +170,19 @@ __global__ void grad_kernel(float2* grad, int grad_p,
                             int slicesAtTime, int ntimes,
                             int width, int height, int wsh, int npixs);
 
-__global__ void getRefTexLAB_kernel(uchar4* texs, int texs_p, int width, int height);
+__global__ void getRefTexLAB_kernel(
+    cudaTextureObject_t r4tex,
+    cudaTextureObject_t t4tex,
+    uchar4* texs, int texs_p, int width, int height);
 
-__global__ void getTarTexLAB_kernel(uchar4* texs, int texs_p, int width, int height);
+__global__ void getTarTexLAB_kernel(
+    cudaTextureObject_t t4tex,
+    uchar4* texs, int texs_p, int width, int height);
 
-__global__ void reprojTarTexLAB_kernel(uchar4* texs, int texs_p, int width, int height, float fpPlaneDepth);
+__global__ void reprojTarTexLAB_kernel(
+    cudaTextureObject_t t4tex,
+    uchar4* texs, int texs_p,
+    int width, int height, float fpPlaneDepth);
 
 __global__ void reprojTarTexRgb_kernel(uchar4* texs, int texs_p, int width, int height, float fpPlaneDepth);
 
@@ -208,27 +220,36 @@ __global__ void updateBestDepth_kernel(
 
 __global__ void downscale_bilateral_smooth_lab_kernel(
     cudaTextureObject_t gaussianTex,
+    cudaTextureObject_t r4tex,
     uchar4* texLab, int texLab_p,
     int width, int height, int scale, int radius, float gammaC);
 
 __global__ void downscale_gauss_smooth_lab_kernel(
     cudaTextureObject_t gaussianTex,
+    cudaTextureObject_t r4tex,
     uchar4* texLab, int texLab_p,
     int width, int height, int scale, int radius);
 
 __global__ void downscale_mean_smooth_lab_kernel(
+    cudaTextureObject_t r4tex,
     uchar4* texLab, int texLab_p,
     int width, int height, int scale);
 
-__global__ void ptsStatForRcDepthMap_kernel(float2* out, int out_p,
-                                            float3* pts, int pts_p,
-                                            int npts, int width, int height,
-                                            int maxNPixSize, int wsh, const float gammaC, const float gammaP);
+__global__ void ptsStatForRcDepthMap_kernel(
+    cudaTextureObject_t r4tex,
+    float2* out, int out_p,
+    float3* pts, int pts_p,
+    int npts, int width, int height,
+    int maxNPixSize, int wsh, const float gammaC, const float gammaP);
 
 __global__ void getSilhoueteMap_kernel(bool* out, int out_p, int step, int width, int height, const uchar4 maskColorLab);
 
-__global__ void retexture_kernel(uchar4* out, int out_p, float4* retexturePixs, int retexturePixs_p, int width,
-                                 int height, int npixs);
+__global__ void retexture_kernel(
+    cudaTextureObject_t r4tex,
+    uchar4* out, int out_p,
+    float4* retexturePixs, int retexturePixs_p,
+    int width,
+    int height, int npixs);
 
 __global__ void retextureComputeNormalMap_kernel(
     uchar4* out, int out_p,
@@ -236,9 +257,13 @@ __global__ void retextureComputeNormalMap_kernel(
     float3* retexturePixsNorms, int retexturePixsNorms_p,
     int width, int height, int npixs);
 
-__global__ void pushPull_Push_kernel(uchar4* out, int out_p, int width, int height);
+__global__ void pushPull_Push_kernel(
+    cudaTextureObject_t r4tex,
+    uchar4* out, int out_p, int width, int height);
 
-__global__ void pushPull_Pull_kernel(uchar4* out, int out_p, int width, int height);
+__global__ void pushPull_Pull_kernel(
+    cudaTextureObject_t r4tex,
+    uchar4* out, int out_p, int width, int height);
 
 } // namespace depthMap
 } // namespace aliceVision

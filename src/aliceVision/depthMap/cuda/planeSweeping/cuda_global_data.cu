@@ -175,6 +175,101 @@ cudaTextureObject_t GlobalData::getScaledPictureTex( int scale, int cam )
     return _scaled_picture_tex[ cam * _scaled_picture_scales + scale ];
 }
 
+void GlobalData::allocPyramidArrays( int levels, int w, int h )
+{
+    _pyramid_levels = levels;
+
+    _pyramid_array.resize( levels );
+    _pyramid_tex  .resize( levels );
+
+    cudaTextureDesc      tex_desc;
+    memset(&tex_desc, 0, sizeof(cudaTextureDesc));
+    tex_desc.normalizedCoords = 0; // addressed (x,y) in [width,height]
+    tex_desc.addressMode[0]   = cudaAddressModeClamp;
+    tex_desc.addressMode[1]   = cudaAddressModeClamp;
+    tex_desc.addressMode[2]   = cudaAddressModeClamp;
+    tex_desc.readMode         = cudaReadModeNormalizedFloat;
+    tex_desc.filterMode       = cudaFilterModeLinear;
+
+    for( int lvl=0; lvl<levels; lvl++ )
+    {
+        _pyramid_array[ lvl ] = new CudaDeviceMemoryPitched<uchar4, 2>( CudaSize<2>( w, h ) );
+
+        cudaResourceDesc res_desc;
+        res_desc.resType = cudaResourceTypePitch2D;
+        res_desc.res.pitch2D.desc         = cudaCreateChannelDesc<uchar4>();
+        res_desc.res.pitch2D.devPtr       = _pyramid_array[ lvl ]->getBuffer();
+        res_desc.res.pitch2D.width        = _pyramid_array[ lvl ]->getSize()[0];
+        res_desc.res.pitch2D.height       = _pyramid_array[ lvl ]->getSize()[1];
+        res_desc.res.pitch2D.pitchInBytes = _pyramid_array[ lvl ]->getPitch();
+
+        cudaCreateTextureObject( &_pyramid_tex[ lvl ],
+                                 &res_desc,
+                                 &tex_desc,
+                                 0 );
+        w /= 2;
+        h /= 2;
+    }
+}
+
+void GlobalData::freePyramidArrays( )
+{
+    _pyramid_levels = 0;
+
+    for( CudaDeviceMemoryPitched<uchar4,2>* ptr : _pyramid_array )
+    {
+        delete ptr;
+    }
+
+    _pyramid_array.clear();
+
+    for( cudaTextureObject_t& obj : _pyramid_tex )
+    {
+        cudaDestroyTextureObject( obj );
+    }
+
+    _pyramid_tex.clear();
+}
+
+CudaDeviceMemoryPitched<uchar4,2>& GlobalData::getPyramidArray( int level )
+{
+    return *_pyramid_array[ level ];
+}
+
+cudaTextureObject_t GlobalData::getPyramidTex( int level )
+{
+    return _pyramid_tex[ level ];
+}
+
+PitchedMem_LinearTexture<uchar4>* GlobalData::getPitchedMemUchar4_LinearTexture( int width, int height )
+{
+    auto it = _pitched_mem_uchar4_linear_tex_cache.find( PitchedMem_Tex_Index( width, height ) );
+    if( it == _pitched_mem_uchar4_linear_tex_cache.end() )
+    {
+        std::cerr << "Allocate pitched mem uchar4 with linear tex " << width << "X" << height << std::endl;
+        PitchedMem_LinearTexture<uchar4>* ptr = new PitchedMem_LinearTexture<uchar4>( width, height );
+        return ptr;
+    }
+    else
+    {
+        std::cerr << "Getting pitched mem uchar4 with linear tex " << width << "X" << height << std::endl;
+        PitchedMem_LinearTexture<uchar4>* ptr = it->second;
+        _pitched_mem_uchar4_linear_tex_cache.erase( it );
+        return ptr;
+    }
+}
+
+void GlobalData::putPitchedMemUchar4_LinearTexture( PitchedMem_LinearTexture<uchar4>* ptr )
+{
+    int width  = ptr->mem->getSize()[0];
+    int height = ptr->mem->getSize()[1];
+    std::cerr << "Putting pitched mem uchar4 with linear tex " << width << "X" << height << std::endl;
+    PitchedMem_Tex_Index idx( width, height );
+    _pitched_mem_uchar4_linear_tex_cache.insert(
+        std::pair<PitchedMem_Tex_Index,PitchedMem_LinearTexture<uchar4>*>(
+            idx, ptr ) );
+}
+
 }; // namespace depthMap
 }; // namespace aliceVision
 

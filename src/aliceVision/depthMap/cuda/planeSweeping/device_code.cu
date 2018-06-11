@@ -62,7 +62,7 @@ texture<float4, 2, cudaReadModeElementType> f4Tex;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 
-__device__ unsigned char computeSigmaOfL(int x, int y, int r)
+__device__ unsigned char computeSigmaOfL( cudaTextureObject_t r4tex, int x, int y, int r)
 {
     double xxsum = 0.0;
     double xsum = 0.0;
@@ -72,7 +72,7 @@ __device__ unsigned char computeSigmaOfL(int x, int y, int r)
     {
         for(int yp = -r; yp <= r; yp++)
         {
-            float lValf = 255.0f * (tex2D(r4tex, (float)(x + xp) + 0.5f, (float)(y + yp) + 0.5f).x);
+            float lValf = 255.0f * (tex2D<float4>(r4tex, (float)(x + xp) + 0.5f, (float)(y + yp) + 0.5f).x);
             double lVal = lValf;
             xsum += lVal;
             xxsum += lVal * lVal;
@@ -85,14 +85,15 @@ __device__ unsigned char computeSigmaOfL(int x, int y, int r)
     return (unsigned char)(fminf(255.0f, sigma));
 }
 
-__device__ unsigned char computeGradientSizeOfL(int x, int y)
-
+__device__ inline unsigned char computeGradientSizeOfL(
+    cudaTextureObject_t r4tex,
+    int x, int y)
 {
 
-    float xM1 = 255.0f * (tex2D(r4tex, (float)(x - 1) + 0.5f, (float)(y + 0) + 0.5f).x);
-    float xP1 = 255.0f * (tex2D(r4tex, (float)(x + 1) + 0.5f, (float)(y + 0) + 0.5f).x);
-    float yM1 = 255.0f * (tex2D(r4tex, (float)(x + 0) + 0.5f, (float)(y - 1) + 0.5f).x);
-    float yP1 = 255.0f * (tex2D(r4tex, (float)(x + 0) + 0.5f, (float)(y + 1) + 0.5f).x);
+    float xM1 = 255.0f * (tex2D<float4>(r4tex, (float)(x - 1) + 0.5f, (float)(y + 0) + 0.5f).x);
+    float xP1 = 255.0f * (tex2D<float4>(r4tex, (float)(x + 1) + 0.5f, (float)(y + 0) + 0.5f).x);
+    float yM1 = 255.0f * (tex2D<float4>(r4tex, (float)(x + 0) + 0.5f, (float)(y - 1) + 0.5f).x);
+    float yP1 = 255.0f * (tex2D<float4>(r4tex, (float)(x + 0) + 0.5f, (float)(y + 1) + 0.5f).x);
 
     // not divided by 2?
     float2 g = make_float2(xM1 - xP1, yM1 - yP1);
@@ -100,7 +101,9 @@ __device__ unsigned char computeGradientSizeOfL(int x, int y)
     return (unsigned char)size(g);
 }
 
-__global__ void compute_varLofLABtoW_kernel(uchar4* labMap, int labMap_p, int width, int height, int wsh)
+__global__ void compute_varLofLABtoW_kernel(
+    cudaTextureObject_t r4tex,
+    uchar4* labMap, int labMap_p, int width, int height, int wsh)
 {
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
@@ -111,7 +114,7 @@ __global__ void compute_varLofLABtoW_kernel(uchar4* labMap, int labMap_p, int wi
 
         // unsigned char sigma = computeSigmaOfL(x, y, wsh);
         // val->w = sigma;
-        unsigned char grad = computeGradientSizeOfL(x, y);
+        unsigned char grad = computeGradientSizeOfL( r4tex, x, y );
 
         val->w = grad;
     }
@@ -172,13 +175,16 @@ __device__ void computePatch(patch& ptch, int depthid, int ndepths, int2& pix, i
     computeRotCSEpip(ptch, p);
 }
 
-__global__ void slice_kernel(float* slice, int slice_p,
-                             // float3* slicePts, int slicePts_p,
-                             int ndepths, int slicesAtTime,
-                             int width, int height, int wsh, int t, int npixs,
-                             int maxDepth,
-                             bool doUsePixelsDepths, bool useTcOrRcPixSize, const float gammaC, const float gammaP,
-                             const float epipShift)
+__global__ void slice_kernel(
+    cudaTextureObject_t r4tex,
+    cudaTextureObject_t t4tex,
+    float* slice, int slice_p,
+    // float3* slicePts, int slicePts_p,
+    int ndepths, int slicesAtTime,
+    int width, int height, int wsh, int t, int npixs,
+    int maxDepth,
+    bool doUsePixelsDepths, bool useTcOrRcPixSize, const float gammaC, const float gammaP,
+    const float epipShift)
 {
     int depthid = blockIdx.x * blockDim.x + threadIdx.x;
     int pixid = blockIdx.y * blockDim.y + threadIdx.y;
@@ -189,7 +195,7 @@ __global__ void slice_kernel(float* slice, int slice_p,
         patch ptcho;
         computePatch(ptcho, depthid, ndepths, pix, pixid, t, doUsePixelsDepths, useTcOrRcPixSize);
 
-        float sim = compNCCby3DptsYK(ptcho, wsh, width, height, gammaC, gammaP, epipShift);
+        float sim = compNCCby3DptsYK( r4tex, t4tex, ptcho, wsh, width, height, gammaC, gammaP, epipShift);
 
         // coalescent
         *get2DBufferAt(slice, slice_p, depthid, pixid) = sim;
@@ -211,10 +217,13 @@ __device__ float3 computeDepthPoint_fine(float& pixSize, int depthid, int ndepth
     return sg_s_rC + rpv * (depth + pixSize * jump);
 }
 
-__global__ void slice_fine_kernel(float* slice, int slice_p,
-                                  int ndepths, int slicesAtTime,
-                                  int width, int height, int wsh, int t, int npixs,
-                                  int maxDepth, const float gammaC, const float gammaP, const float epipShift)
+__global__ void slice_fine_kernel(
+    cudaTextureObject_t r4tex,
+    cudaTextureObject_t t4tex,
+    float* slice, int slice_p,
+    int ndepths, int slicesAtTime,
+    int width, int height, int wsh, int t, int npixs,
+    int maxDepth, const float gammaC, const float gammaP, const float epipShift)
 {
     int depthid = blockIdx.x * blockDim.x + threadIdx.x;
     int pixid = blockIdx.y * blockDim.y + threadIdx.y;
@@ -233,7 +242,7 @@ __global__ void slice_fine_kernel(float* slice, int slice_p,
         ptcho.n.z = normal.z;
         ptcho.d = pixSize;
         computeRotCS(ptcho.x, ptcho.y, ptcho.n);
-        float sim = compNCCby3DptsYK(ptcho, wsh, width, height, gammaC, gammaP, epipShift);
+        float sim = compNCCby3DptsYK( r4tex, t4tex, ptcho, wsh, width, height, gammaC, gammaP, epipShift);
         // coalescent
         int sliceid = pixid * slice_p + depthid;
         slice[sliceid] = sim;
@@ -241,6 +250,7 @@ __global__ void slice_fine_kernel(float* slice, int slice_p,
 }
 
 __global__ void smoothDepthMap_kernel(
+    cudaTextureObject_t r4tex,
     float* dmap, int dmap_p,
     int width, int height, int wsh, const float gammaC, const float gammaP)
 {
@@ -260,7 +270,7 @@ __global__ void smoothDepthMap_kernel(
             pixSize = size(p1 - p2);
         }
 
-        float4 gcr = 255.0f * tex2D(r4tex, (float)x + 0.5f, (float)y + 0.5f);
+        float4 gcr = 255.0f * tex2D<float4>(r4tex, (float)x + 0.5f, (float)y + 0.5f);
         float depthUp = 0.0f;
         float depthDown = 0.0f;
 
@@ -271,7 +281,7 @@ __global__ void smoothDepthMap_kernel(
                 float depthn = tex2D(depthsTex, x + xp, y + yp);
                 if((depth > 0.0f) && (fabs(depthn - depth) < 10.0f * pixSize))
                 {
-                    float4 gcr1 = 255.0f * tex2D(r4tex, (float)(x + xp) + 0.5f, (float)(y + yp) + 0.5f);
+                    float4 gcr1 = 255.0f * tex2D<float4>(r4tex, (float)(x + xp) + 0.5f, (float)(y + yp) + 0.5f);
                     float w = CostYKfromLab(xp, yp, gcr, gcr1, gammaC, gammaP);
                     depthUp += w * depthn;
                     depthDown += w;
@@ -283,6 +293,7 @@ __global__ void smoothDepthMap_kernel(
 }
 
 __global__ void filterDepthMap_kernel(
+    cudaTextureObject_t r4tex,
     float* dmap, int dmap_p,
     int width, int height, int wsh, const float gammaC, const float minCostThr)
 {
@@ -302,7 +313,7 @@ __global__ void filterDepthMap_kernel(
             pixSize = size(p1 - p2);
         }
 
-        float4 gcr = 255.0f * tex2D(r4tex, (float)x + 0.5f, (float)y + 0.5f);
+        float4 gcr = 255.0f * tex2D<float4>(r4tex, (float)x + 0.5f, (float)y + 0.5f);
         float depthDown = 0.0f;
 
         for(int yp = -wsh; yp <= wsh; yp++)
@@ -312,7 +323,7 @@ __global__ void filterDepthMap_kernel(
                 float depthn = tex2D(depthsTex, x + xp, y + yp);
                 if((depth > 0.0f) && (fabs(depthn - depth) < 10.0f * pixSize))
                 {
-                    float4 gcr1 = 255.0f * tex2D(r4tex, (float)(x + xp) + 0.5f, (float)(y + yp) + 0.5f);
+                    float4 gcr1 = 255.0f * tex2D<float4>(r4tex, (float)(x + xp) + 0.5f, (float)(y + yp) + 0.5f);
                     float w = CostYKfromLab(gcr, gcr1, gammaC);
 
                     depthDown += w;
@@ -324,6 +335,7 @@ __global__ void filterDepthMap_kernel(
 }
 
 __global__ void alignSourceDepthMapToTarget_kernel(
+    cudaTextureObject_t r4tex,
     float* dmap, int dmap_p,
     int width, int height, int wsh, const float gammaC, const float maxPixelSizeDist)
 {
@@ -343,7 +355,7 @@ __global__ void alignSourceDepthMapToTarget_kernel(
         }
 
         float maxDepthsDist = maxPixelSizeDist * pixSize;
-        float4 gcr = 255.0f * tex2D(r4tex, (float)x + 0.5f, (float)y + 0.5f);
+        float4 gcr = 255.0f * tex2D<float4>(r4tex, (float)x + 0.5f, (float)y + 0.5f);
         float avdist = 0.0f;
         float navdist = 0.0f;
 
@@ -356,7 +368,7 @@ __global__ void alignSourceDepthMapToTarget_kernel(
 
                 if((sourceDepth > 0.0f) && (targetDepth > 0.0f) && (fabs(targetDepth - sourceDepth) < maxDepthsDist))
                 {
-                    float4 gcr1 = 255.0f * tex2D(r4tex, (float)(x + xp) + 0.5f, (float)(y + yp) + 0.5f);
+                    float4 gcr1 = 255.0f * tex2D<float4>(r4tex, (float)(x + xp) + 0.5f, (float)(y + yp) + 0.5f);
                     float deltaC = Euclidean3(gcr, gcr1);
                     if(deltaC < gammaC)
                     {
@@ -372,6 +384,7 @@ __global__ void alignSourceDepthMapToTarget_kernel(
 }
 
 __global__ void computeNormalMap_kernel(
+    cudaTextureObject_t r4tex,
     float3* nmap, int nmap_p,
     int width, int height, int wsh, const float gammaC, const float gammaP)
 {
@@ -390,7 +403,7 @@ __global__ void computeNormalMap_kernel(
             pixSize = size(p1 - p2);
         }
 
-        float4 gcr = 255.0f * tex2D(r4tex, (float)x + 0.5f, (float)y + 0.5f);
+        float4 gcr = 255.0f * tex2D<float4>(r4tex, (float)x + 0.5f, (float)y + 0.5f);
         cuda_stat3d s3d = cuda_stat3d();
 
         for(int yp = -wsh; yp <= wsh; yp++)
@@ -668,29 +681,37 @@ __global__ void grad_kernel(float2* grad, int grad_p,
     }
 }
 
-__global__ void getRefTexLAB_kernel(uchar4* texs, int texs_p, int width, int height)
+__global__ void getRefTexLAB_kernel(
+    cudaTextureObject_t r4tex,
+    cudaTextureObject_t t4tex,
+    uchar4* texs, int texs_p, int width, int height)
 {
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
 
     if((x < width) && (y < height))
     {
-        *get2DBufferAt(texs, texs_p, x, y) = float4_to_uchar4(255.0f * tex2D(r4tex, (float)x + 0.5f, (float)y + 0.5f));
+        *get2DBufferAt(texs, texs_p, x, y) = float4_to_uchar4(255.0f * tex2D<float4>(r4tex, (float)x + 0.5f, (float)y + 0.5f));
     }
 }
 
-__global__ void getTarTexLAB_kernel(uchar4* texs, int texs_p, int width, int height)
+__global__ void getTarTexLAB_kernel(
+    cudaTextureObject_t t4tex,
+    uchar4* texs, int texs_p,
+    int width, int height)
 {
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
 
     if((x < width) && (y < height))
     {
-        *get2DBufferAt(texs, texs_p, x, y) = float4_to_uchar4(255.0f * tex2D(t4tex, (float)x + 0.5f, (float)y + 0.5f));
+        *get2DBufferAt(texs, texs_p, x, y) = float4_to_uchar4(255.0f * tex2D<float4>(t4tex, (float)x + 0.5f, (float)y + 0.5f));
     }
 }
 
-__global__ void reprojTarTexLAB_kernel(uchar4* texs, int texs_p, int width, int height, float fpPlaneDepth)
+__global__ void reprojTarTexLAB_kernel(
+    cudaTextureObject_t t4tex,
+    uchar4* texs, int texs_p, int width, int height, float fpPlaneDepth)
 {
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
@@ -707,7 +728,7 @@ __global__ void reprojTarTexLAB_kernel(uchar4* texs, int texs_p, int width, int 
         if(((tpc.x + 0.5f) > 0.0f) && ((tpc.y + 0.5f) > 0.0f) &&
            ((tpc.x + 0.5f) < (float)width - 1.0f) && ((tpc.y + 0.5f) < (float)height - 1.0f))
         {
-            *tex = float4_to_uchar4(255.0f * tex2D(t4tex, (float)tpc.x + 0.5f, (float)tpc.y + 0.5f));
+            *tex = float4_to_uchar4(255.0f * tex2D<float4>(t4tex, (float)tpc.x + 0.5f, (float)tpc.y + 0.5f));
         }
         else
         {
@@ -1043,6 +1064,7 @@ __global__ void updateBestDepth_kernel(
 
 __global__ void downscale_bilateral_smooth_lab_kernel(
     cudaTextureObject_t gaussianTex,
+    cudaTextureObject_t r4tex,
     uchar4* texLab, int texLab_p,
     int width, int height, int scale, int radius, float gammaC)
 {
@@ -1054,13 +1076,13 @@ __global__ void downscale_bilateral_smooth_lab_kernel(
         float4 t = make_float4(0.0f, 0.0f, 0.0f, 0.0f);
         float sum = 0.0f;
         float4 center =
-            255.0f * tex2D(r4tex, (float)(x * scale) + (float)scale / 2.0f, (float)(y * scale) + (float)scale / 2.0f);
+            255.0f * tex2D<float4>(r4tex, (float)(x * scale) + (float)scale / 2.0f, (float)(y * scale) + (float)scale / 2.0f);
 
         for(int i = -radius; i <= radius; i++)
         {
             for(int j = -radius; j <= radius; j++)
             {
-                float4 curPix = 255.0f * tex2D(r4tex, (float)(x * scale + j) + (float)scale / 2.0f,
+                float4 curPix = 255.0f * tex2D<float4>(r4tex, (float)(x * scale + j) + (float)scale / 2.0f,
                                                (float)(y * scale + i) + (float)scale / 2.0f);
                 float factor = (tex1D<float>(gaussianTex, i + radius) * tex1D<float>(gaussianTex, j + radius)) // domain factor
                                * CostYKfromLab(center, curPix, gammaC); // range factor
@@ -1082,6 +1104,7 @@ __global__ void downscale_bilateral_smooth_lab_kernel(
 
 __global__ void downscale_gauss_smooth_lab_kernel(
     cudaTextureObject_t gaussianTex,
+    cudaTextureObject_t r4tex,
     uchar4* texLab, int texLab_p,
     int width, int height, int scale, int radius)
 {
@@ -1096,7 +1119,7 @@ __global__ void downscale_gauss_smooth_lab_kernel(
         {
             for(int j = -radius; j <= radius; j++)
             {
-                float4 curPix = 255.0f * tex2D(r4tex, (float)(x * scale + j) + (float)scale / 2.0f,
+                float4 curPix = 255.0f * tex2D<float4>(r4tex, (float)(x * scale + j) + (float)scale / 2.0f,
                                                (float)(y * scale + i) + (float)scale / 2.0f);
                 float factor = (tex1D<float>(gaussianTex, i + radius) * tex1D<float>(gaussianTex, j + radius)); // domain factor
                 t = t + curPix * factor;
@@ -1115,6 +1138,7 @@ __global__ void downscale_gauss_smooth_lab_kernel(
 }
 
 __global__ void downscale_mean_smooth_lab_kernel(
+    cudaTextureObject_t r4tex,
     uchar4* texLab, int texLab_p,
     int width, int height, int scale)
 {
@@ -1128,7 +1152,7 @@ __global__ void downscale_mean_smooth_lab_kernel(
         {
             for(int j = 0; j < scale; j++)
             {
-                float4 curPix = 255.0f * tex2D(r4tex, (float)(x * scale + j) + 0.5f, (float)(y * scale + i) + 0.5f);
+                float4 curPix = 255.0f * tex2D<float4>(r4tex, (float)(x * scale + j) + 0.5f, (float)(y * scale + i) + 0.5f);
                 t = t + curPix;
                 sum += 1.0f;
             }
@@ -1145,10 +1169,12 @@ __global__ void downscale_mean_smooth_lab_kernel(
     }
 }
 
-__global__ void ptsStatForRcDepthMap_kernel(float2* out, int out_p,
-                                            float3* pts, int pts_p,
-                                            int npts, int width, int height,
-                                            int maxNPixSize, int wsh, const float gammaC, const float gammaP)
+__global__ void ptsStatForRcDepthMap_kernel(
+    cudaTextureObject_t r4tex,
+    float2* out, int out_p,
+    float3* pts, int pts_p,
+    int npts, int width, int height,
+    int maxNPixSize, int wsh, const float gammaC, const float gammaP)
 {
     int ptid = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -1165,7 +1191,7 @@ __global__ void ptsStatForRcDepthMap_kernel(float2* out, int out_p,
 
         if((pix.x > wsh) && (pix.x < width - wsh) && (pix.y > wsh) && (pix.y < height - wsh))
         {
-            float varianceGray = 255.0f * tex2D(r4tex, (float)pix.x + 0.5f, (float)pix.y + 0.5f).w;
+            float varianceGray = 255.0f * tex2D<float4>(r4tex, (float)pix.x + 0.5f, (float)pix.y + 0.5f).w;
             float depth = tex2D(depthsTex, pix.x, pix.y);
             depthVarianceGray = make_float2(depth, varianceGray);
         }
@@ -1187,8 +1213,10 @@ __global__ void getSilhoueteMap_kernel(bool* out, int out_p, int step, int width
     }
 }
 
-__global__ void retexture_kernel(uchar4* out, int out_p, float4* retexturePixs, int retexturePixs_p, int width,
-                                 int height, int npixs)
+__global__ void retexture_kernel(
+    cudaTextureObject_t r4tex,
+    uchar4* out, int out_p, float4* retexturePixs, int retexturePixs_p, int width,
+    int height, int npixs)
 {
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
@@ -1198,7 +1226,7 @@ __global__ void retexture_kernel(uchar4* out, int out_p, float4* retexturePixs, 
         float4 retPixs = *get2DBufferAt(retexturePixs, retexturePixs_p, x, y);
         int2 objPix = make_int2((int)retPixs.x, (int)retPixs.y);
         float2 origPix = make_float2(retPixs.z, retPixs.w);
-        float4 colf4 = 255.0f * tex2D(r4tex, origPix.x, origPix.y);
+        float4 colf4 = 255.0f * tex2D<float4>(r4tex, origPix.x, origPix.y);
 
         *get2DBufferAt(out, out_p, objPix.x, objPix.y) =
             make_uchar4((unsigned char)colf4.x, (unsigned char)colf4.y, (unsigned char)colf4.z, (unsigned char)colf4.w);
@@ -1225,7 +1253,9 @@ __global__ void retextureComputeNormalMap_kernel(
     }
 }
 
-__global__ void pushPull_Push_kernel(uchar4* out, int out_p, int width, int height)
+__global__ void pushPull_Push_kernel(
+    cudaTextureObject_t r4tex,
+    uchar4* out, int out_p, int width, int height)
 {
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
@@ -1239,7 +1269,7 @@ __global__ void pushPull_Push_kernel(uchar4* out, int out_p, int width, int heig
         {
             for(int xp = x * 2; xp <= x * 2 + 1; xp++)
             {
-                float4 colf4 = 255.0f * tex2D(r4tex, (float)xp + 0.5f, (float)yp + 0.5f);
+                float4 colf4 = 255.0f * tex2D<float4>(r4tex, (float)xp + 0.5f, (float)yp + 0.5f);
                 uchar4 col4 = make_uchar4((unsigned char)colf4.x, (unsigned char)colf4.y, (unsigned char)colf4.z,
                                           (unsigned char)colf4.w);
 
@@ -1263,7 +1293,9 @@ __global__ void pushPull_Push_kernel(uchar4* out, int out_p, int width, int heig
     }
 }
 
-__global__ void pushPull_Pull_kernel(uchar4* out, int out_p, int width, int height)
+__global__ void pushPull_Pull_kernel(
+    cudaTextureObject_t r4tex,
+    uchar4* out, int out_p, int width, int height)
 {
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
@@ -1272,7 +1304,7 @@ __global__ void pushPull_Pull_kernel(uchar4* out, int out_p, int width, int heig
         uchar4* col4 = get2DBufferAt(out, out_p, x, y);
         if((col4->x == 0) && (col4->y == 0) && (col4->z == 0))
         {
-            float4 colf4 = 255.0f * tex2D(r4tex, ((float)x + 0.5f) / 2.0f, ((float)y + 0.5f) / 2.0f);
+            float4 colf4 = 255.0f * tex2D<float4>(r4tex, ((float)x + 0.5f) / 2.0f, ((float)y + 0.5f) / 2.0f);
             *col4 = make_uchar4((unsigned char)colf4.x, (unsigned char)colf4.y, (unsigned char)colf4.z, 0);
         }
     }

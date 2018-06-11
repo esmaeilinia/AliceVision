@@ -27,13 +27,17 @@ __global__ void fuse_computeFusedDepthSimMapFromBestGaussianKernelVotingSampleMa
     float2* oDepthSimMap, int oDepthSimMap_p, float2* bestGsvSampleMap, int bestGsvSampleMap_p,
     float2* midDepthPixSizeMap, int midDepthPixSizeMap_p, int width, int height, float samplesPerPixSize);
 
-__global__ void fuse_getOptDeptMapFromOPtDepthSimMap_kernel(float* optDepthMap, int optDepthMap_p,
-                                                            float2* optDepthMapSimMap, int optDepthMapSimMap_p,
-                                                            int width, int height);
-__global__ void fuse_optimizeDepthSimMap_kernel(float2* out_optDepthSimMap, int optDepthSimMap_p,
-                                                float2* midDepthPixSizeMap, int midDepthPixSizeMap_p,
-                                                float2* fusedDepthSimMap, int fusedDepthSimMap_p, int width, int height,
-                                                int iter, float samplesPerPixSize, int yFrom);
+__global__ void fuse_getOptDeptMapFromOPtDepthSimMap_kernel(
+                    float* optDepthMap, int optDepthMap_p,
+                    float2* optDepthMapSimMap, int optDepthMapSimMap_p,
+                    int width, int height);
+
+__global__ void fuse_optimizeDepthSimMap_kernel(
+                    cudaTextureObject_t r4tex,
+                    float2* out_optDepthSimMap, int optDepthSimMap_p,
+                    float2* midDepthPixSizeMap, int midDepthPixSizeMap_p,
+                    float2* fusedDepthSimMap, int fusedDepthSimMap_p, int width, int height,
+                    int iter, float samplesPerPixSize, int yFrom);
 
 } // namespace depthMap
 } // namespace aliceVision
