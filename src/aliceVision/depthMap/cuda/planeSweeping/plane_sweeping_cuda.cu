@@ -808,7 +808,7 @@ void ps_updateAggrVolume(
 
     if(verbose)
         printf("ps_updateAggrVolume done\n");
-};
+}
 
 
 /**
@@ -1924,9 +1924,11 @@ void ps_planeSweepAggr(CudaHostMemoryHeap<uchar4, 2>& rimg_hmh, CudaHostMemoryHe
     copy(timg_dmp, timg_hmh);
 
     // CudaArray<unsigned char, 2> rtex_arr(CudaSize<2>(width, height));
-    CudaArray<unsigned char, 2> gtex_arr(CudaSize<2>(width, height));
-    CudaArray<unsigned char, 2> btex_arr(CudaSize<2>(width, height));
+    // CudaArray<unsigned char, 2> gtex_arr(CudaSize<2>(width, height));
+    // CudaArray<unsigned char, 2> btex_arr(CudaSize<2>(width, height));
     auto rtex = global_data.getPitchedMemUchar_LinearTexture( width, height );
+    auto gtex = global_data.getPitchedMemUchar_LinearTexture( width, height );
+    auto btex = global_data.getPitchedMemUchar_LinearTexture( width, height );
 
     CudaDeviceMemoryPitched<unsigned char, 2> tex_dmp(CudaSize<2>(width, height));
 
@@ -1934,24 +1936,26 @@ void ps_planeSweepAggr(CudaHostMemoryHeap<uchar4, 2>& rimg_hmh, CudaHostMemoryHe
                                                 tex_dmp.stride()[0], width, height);
     cudaThreadSynchronize();
     // copy((rtex_arr), tex_dmp);
-    copy( *rtex->mem, tex_dmp);
+    copy( *rtex->mem, tex_dmp );
 
     copyUchar4Dim2uchar_kernel<<<grid, block>>>(1, timg_dmp.getBuffer(), timg_dmp.stride()[0], tex_dmp.getBuffer(),
                                                 tex_dmp.stride()[0], width, height);
     cudaThreadSynchronize();
-    copy((gtex_arr), tex_dmp);
+    // copy((gtex_arr), tex_dmp);
+    copy( *gtex->mem, tex_dmp );
 
     copyUchar4Dim2uchar_kernel<<<grid, block>>>(2, timg_dmp.getBuffer(), timg_dmp.stride()[0], tex_dmp.getBuffer(),
                                                 tex_dmp.stride()[0], width, height);
     cudaThreadSynchronize();
-    copy((btex_arr), tex_dmp);
+    // copy((btex_arr), tex_dmp);
+    copy( *btex->mem, tex_dmp );
 
     if(verbose)
         printf("bind\n");
 
     // cudaBindTextureToArray(rtex, rtex_arr.getArray(), cudaCreateChannelDesc<unsigned char>());
-    cudaBindTextureToArray(gtex, gtex_arr.getArray(), cudaCreateChannelDesc<unsigned char>());
-    cudaBindTextureToArray(btex, btex_arr.getArray(), cudaCreateChannelDesc<unsigned char>());
+    // cudaBindTextureToArray(gtex, gtex_arr.getArray(), cudaCreateChannelDesc<unsigned char>());
+    // cudaBindTextureToArray(btex, btex_arr.getArray(), cudaCreateChannelDesc<unsigned char>());
 
     // setup cameras matrices to the constant memory
     ps_init_reference_camera_matrices(rtcams[0]->P, rtcams[0]->iP, rtcams[0]->R, rtcams[0]->iR, rtcams[0]->K,
@@ -1978,7 +1982,12 @@ void ps_planeSweepAggr(CudaHostMemoryHeap<uchar4, 2>& rimg_hmh, CudaHostMemoryHe
     {
         float depth = depths[d];
 
-        reprojTarTexRgb_kernel<<<grid, block>>>( rtex->tex, timg_dmp.getBuffer(), timg_dmp.stride()[0], width, height, depth);
+        reprojTarTexRgb_kernel<<<grid, block>>>(
+            rtex->tex,
+            gtex->tex,
+            btex->tex,
+            timg_dmp.getBuffer(), timg_dmp.stride()[0],
+            width, height, depth);
         cudaThreadSynchronize();
 
         transpose_uchar4_kernel<<<grid, block>>>(timg_dmp.getBuffer(), timg_dmp.stride()[0], timgT_dmp.getBuffer(),
@@ -2032,9 +2041,11 @@ void ps_planeSweepAggr(CudaHostMemoryHeap<uchar4, 2>& rimg_hmh, CudaHostMemoryHe
     copy((*odepth_hmh), depth_dmp);
 
     // cudaUnbindTexture(rtex);
-    cudaUnbindTexture(gtex);
-    cudaUnbindTexture(btex);
+    // cudaUnbindTexture(gtex);
+    // cudaUnbindTexture(btex);
     global_data.putPitchedMemUchar_LinearTexture( rtex );
+    global_data.putPitchedMemUchar_LinearTexture( gtex );
+    global_data.putPitchedMemUchar_LinearTexture( btex );
 
     if(verbose)
         printf("gpu elapsed time: %f ms \n", toc(tall));

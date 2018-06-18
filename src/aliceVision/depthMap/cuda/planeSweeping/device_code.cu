@@ -708,6 +708,8 @@ __global__ void reprojTarTexLAB_kernel(
 
 __global__ void reprojTarTexRgb_kernel(
     cudaTextureObject_t rtex,
+    cudaTextureObject_t gtex,
+    cudaTextureObject_t btex,
     uchar4* texs, int texs_p,
     int width, int height, float fpPlaneDepth )
 {
@@ -727,8 +729,8 @@ __global__ void reprojTarTexRgb_kernel(
            ((tpc.x + 0.5f) < (float)width - 1.0f) && ((tpc.y + 0.5f) < (float)height - 1.0f))
         {
             tex->x = (unsigned char)(255.0f * tex2D<float>( rtex, (float)tpc.x + 0.5f, (float)tpc.y + 0.5f));
-            tex->y = (unsigned char)(255.0f * tex2D(gtex, (float)tpc.x + 0.5f, (float)tpc.y + 0.5f));
-            tex->z = (unsigned char)(255.0f * tex2D(btex, (float)tpc.x + 0.5f, (float)tpc.y + 0.5f));
+            tex->y = (unsigned char)(255.0f * tex2D<float>(gtex, (float)tpc.x + 0.5f, (float)tpc.y + 0.5f));
+            tex->z = (unsigned char)(255.0f * tex2D<float>(btex, (float)tpc.x + 0.5f, (float)tpc.y + 0.5f));
             tex->w = 1;
         }
         else

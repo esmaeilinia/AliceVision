@@ -177,6 +177,8 @@ __global__ void reprojTarTexLAB_kernel(
 
 __global__ void reprojTarTexRgb_kernel(
     cudaTextureObject_t rtex,
+    cudaTextureObject_t gtex,
+    cudaTextureObject_t btex,
     uchar4* texs, int texs_p,
     int width, int height, float fpPlaneDepth);
 
