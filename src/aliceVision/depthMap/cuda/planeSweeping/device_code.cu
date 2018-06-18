@@ -22,16 +22,6 @@ namespace depthMap {
 
 // Global data handlers and parameters
 
-/*
-// defines
-texture<unsigned char, 2, cudaReadModeNormalizedFloat> rtex;
-texture<unsigned char, 2, cudaReadModeNormalizedFloat> ttex;
-*/
-
-#define DCT_DIMENSION 7
-
-#define MAX_CUDA_DEVICES 10
-
 texture<int4, 2, cudaReadModeElementType> volPixsTex;
 
 texture<int2, 2, cudaReadModeElementType> pixsTex;
@@ -657,30 +647,6 @@ __device__ float2 computeMagRot(float l, float r, float u, float d)
     return out;
 }
 
-__device__ float2 computeMagRotL(int x, int y)
-{
-    float l = 255.0f * tex2D(rtex, (float)(x - 1) + 0.5f, (float)y + 0.5f);
-    float r = 255.0f * tex2D(rtex, (float)(x + 1) + 0.5f, (float)y + 0.5f);
-    float u = 255.0f * tex2D(rtex, (float)x + 0.5f, (float)(y - 1) + 0.5f);
-    float d = 255.0f * tex2D(rtex, (float)x + 0.5f, (float)(y + 1) + 0.5f);
-
-    return computeMagRot(l, r, u, d);
-}
-
-__global__ void grad_kernel(float2* grad, int grad_p,
-                            int2* pixs, int pixs_p,
-                            int slicesAtTime, int ntimes,
-                            int width, int height, int wsh, int npixs)
-{
-    int pixid = blockIdx.x * blockDim.x + threadIdx.x;
-    int t = blockIdx.y * blockDim.y + threadIdx.y;
-    if((pixid < slicesAtTime) && (slicesAtTime * t + pixid < npixs))
-    {
-        int2 pix = *get2DBufferAt(pixs, pixs_p, pixid, t);
-        *get2DBufferAt(grad, grad_p, pixid, t) = computeMagRotL(pix.x, pix.y);
-    }
-}
-
 __global__ void getRefTexLAB_kernel(
     cudaTextureObject_t r4tex,
     cudaTextureObject_t t4tex,
@@ -740,7 +706,10 @@ __global__ void reprojTarTexLAB_kernel(
     }
 }
 
-__global__ void reprojTarTexRgb_kernel(uchar4* texs, int texs_p, int width, int height, float fpPlaneDepth)
+__global__ void reprojTarTexRgb_kernel(
+    cudaTextureObject_t rtex,
+    uchar4* texs, int texs_p,
+    int width, int height, float fpPlaneDepth )
 {
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
@@ -757,7 +726,7 @@ __global__ void reprojTarTexRgb_kernel(uchar4* texs, int texs_p, int width, int 
         if(((tpc.x + 0.5f) > 0.0f) && ((tpc.y + 0.5f) > 0.0f) &&
            ((tpc.x + 0.5f) < (float)width - 1.0f) && ((tpc.y + 0.5f) < (float)height - 1.0f))
         {
-            tex->x = (unsigned char)(255.0f * tex2D(rtex, (float)tpc.x + 0.5f, (float)tpc.y + 0.5f));
+            tex->x = (unsigned char)(255.0f * tex2D<float>( rtex, (float)tpc.x + 0.5f, (float)tpc.y + 0.5f));
             tex->y = (unsigned char)(255.0f * tex2D(gtex, (float)tpc.x + 0.5f, (float)tpc.y + 0.5f));
             tex->z = (unsigned char)(255.0f * tex2D(btex, (float)tpc.x + 0.5f, (float)tpc.y + 0.5f));
             tex->w = 1;

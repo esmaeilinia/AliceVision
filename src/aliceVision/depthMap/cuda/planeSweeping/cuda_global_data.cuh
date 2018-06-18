@@ -70,6 +70,7 @@ struct PitchedMem_LinearTexture
 
 class GlobalData
 {
+    typedef unsigned char uchar;
 public:
 
     ~GlobalData( );
@@ -90,6 +91,9 @@ public:
     PitchedMem_LinearTexture<uchar4>*  getPitchedMemUchar4_LinearTexture( int width, int height );
     void                               putPitchedMemUchar4_LinearTexture( PitchedMem_LinearTexture<uchar4>* ptr );
 
+    PitchedMem_LinearTexture<uchar>*   getPitchedMemUchar_LinearTexture( int width, int height );
+    void                               putPitchedMemUchar_LinearTexture( PitchedMem_LinearTexture<uchar>* ptr );
+
 private:
     std::map<GaussianArrayIndex,GaussianArray*> _gaussian_arr_table;
 
@@ -102,6 +106,7 @@ private:
     int                                              _pyramid_levels;
 
     std::multimap<PitchedMem_Tex_Index,PitchedMem_LinearTexture<uchar4>*> _pitched_mem_uchar4_linear_tex_cache;
+    std::multimap<PitchedMem_Tex_Index,PitchedMem_LinearTexture<uchar>*>  _pitched_mem_uchar_linear_tex_cache;
 };
 
 /*

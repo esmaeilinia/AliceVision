@@ -160,10 +160,6 @@ __global__ void getBest_fine_kernel(float* slice, int slice_p,
                                     int slicesAtTime, int ndepths, int t, int npixs,
                                     int wsh, int width, int height);
 
-__global__ void grad_kernel(float2* grad, int grad_p,
-                            int2* pixs, int pixs_p,
-                            int slicesAtTime, int ntimes,
-                            int width, int height, int wsh, int npixs);
 
 __global__ void getRefTexLAB_kernel(
     cudaTextureObject_t r4tex,
@@ -179,7 +175,10 @@ __global__ void reprojTarTexLAB_kernel(
     uchar4* texs, int texs_p,
     int width, int height, float fpPlaneDepth);
 
-__global__ void reprojTarTexRgb_kernel(uchar4* texs, int texs_p, int width, int height, float fpPlaneDepth);
+__global__ void reprojTarTexRgb_kernel(
+    cudaTextureObject_t rtex,
+    uchar4* texs, int texs_p,
+    int width, int height, float fpPlaneDepth);
 
 __global__ void copyUchar4Dim2uchar_kernel(int dim, uchar4* src, int src_p, unsigned char* tar, int tar_p, int width,
                                            int height);

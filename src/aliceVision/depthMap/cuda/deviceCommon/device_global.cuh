@@ -21,8 +21,8 @@ inline static __device__ int clamp(int x, int a, int b)
 // Global data handlers and parameters
 // defines
 
-extern texture<unsigned char, 2, cudaReadModeNormalizedFloat> rtex;
-extern texture<unsigned char, 2, cudaReadModeNormalizedFloat> ttex;
+// extern texture<unsigned char, 2, cudaReadModeNormalizedFloat> rtex;
+// extern texture<unsigned char, 2, cudaReadModeNormalizedFloat> ttex;
 extern texture<unsigned char, 2, cudaReadModeNormalizedFloat> gtex;
 extern texture<unsigned char, 2, cudaReadModeNormalizedFloat> btex;
 

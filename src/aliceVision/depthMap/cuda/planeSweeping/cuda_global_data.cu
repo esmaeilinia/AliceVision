@@ -270,6 +270,35 @@ void GlobalData::putPitchedMemUchar4_LinearTexture( PitchedMem_LinearTexture<uch
             idx, ptr ) );
 }
 
+PitchedMem_LinearTexture<unsigned char>* GlobalData::getPitchedMemUchar_LinearTexture( int width, int height )
+{
+    auto it = _pitched_mem_uchar_linear_tex_cache.find( PitchedMem_Tex_Index( width, height ) );
+    if( it == _pitched_mem_uchar_linear_tex_cache.end() )
+    {
+        std::cerr << "Allocate pitched mem uchar4 with linear tex " << width << "X" << height << std::endl;
+        PitchedMem_LinearTexture<uchar>* ptr = new PitchedMem_LinearTexture<uchar>( width, height );
+        return ptr;
+    }
+    else
+    {
+        std::cerr << "Getting pitched mem uchar4 with linear tex " << width << "X" << height << std::endl;
+        PitchedMem_LinearTexture<uchar>* ptr = it->second;
+        _pitched_mem_uchar_linear_tex_cache.erase( it );
+        return ptr;
+    }
+}
+
+void GlobalData::putPitchedMemUchar_LinearTexture( PitchedMem_LinearTexture<unsigned char>* ptr )
+{
+    int width  = ptr->mem->getSize()[0];
+    int height = ptr->mem->getSize()[1];
+    std::cerr << "Putting pitched mem uchar4 with linear tex " << width << "X" << height << std::endl;
+    PitchedMem_Tex_Index idx( width, height );
+    _pitched_mem_uchar_linear_tex_cache.insert(
+        std::pair<PitchedMem_Tex_Index,PitchedMem_LinearTexture<uchar>*>(
+            idx, ptr ) );
+}
+
 }; // namespace depthMap
 }; // namespace aliceVision
 
