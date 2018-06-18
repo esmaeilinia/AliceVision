@@ -241,61 +241,61 @@ cudaTextureObject_t GlobalData::getPyramidTex( int level )
     return _pyramid_tex[ level ];
 }
 
-PitchedMem_LinearTexture<uchar4>* GlobalData::getPitchedMemUchar4_LinearTexture( int width, int height )
+PitchedMem_LinearTexture<uchar4,cudaFilterModeLinear>* GlobalData::getPitchedMemUchar4_LinearTexture( int width, int height )
 {
     auto it = _pitched_mem_uchar4_linear_tex_cache.find( PitchedMem_Tex_Index( width, height ) );
     if( it == _pitched_mem_uchar4_linear_tex_cache.end() )
     {
         std::cerr << "Allocate pitched mem uchar4 with linear tex " << width << "X" << height << std::endl;
-        PitchedMem_LinearTexture<uchar4>* ptr = new PitchedMem_LinearTexture<uchar4>( width, height );
+        PitchedMem_LinearTexture<uchar4,cudaFilterModeLinear>* ptr = new PitchedMem_LinearTexture<uchar4,cudaFilterModeLinear>( width, height );
         return ptr;
     }
     else
     {
         std::cerr << "Getting pitched mem uchar4 with linear tex " << width << "X" << height << std::endl;
-        PitchedMem_LinearTexture<uchar4>* ptr = it->second;
+        PitchedMem_LinearTexture<uchar4,cudaFilterModeLinear>* ptr = it->second;
         _pitched_mem_uchar4_linear_tex_cache.erase( it );
         return ptr;
     }
 }
 
-void GlobalData::putPitchedMemUchar4_LinearTexture( PitchedMem_LinearTexture<uchar4>* ptr )
+void GlobalData::putPitchedMemUchar4_LinearTexture( PitchedMem_LinearTexture<uchar4,cudaFilterModeLinear>* ptr )
 {
     int width  = ptr->mem->getSize()[0];
     int height = ptr->mem->getSize()[1];
     std::cerr << "Putting pitched mem uchar4 with linear tex " << width << "X" << height << std::endl;
     PitchedMem_Tex_Index idx( width, height );
     _pitched_mem_uchar4_linear_tex_cache.insert(
-        std::pair<PitchedMem_Tex_Index,PitchedMem_LinearTexture<uchar4>*>(
+        std::pair<PitchedMem_Tex_Index,PitchedMem_LinearTexture<uchar4,cudaFilterModeLinear>*>(
             idx, ptr ) );
 }
 
-PitchedMem_LinearTexture<unsigned char>* GlobalData::getPitchedMemUchar_LinearTexture( int width, int height )
+PitchedMem_LinearTexture<unsigned char,cudaFilterModeLinear>* GlobalData::getPitchedMemUchar_LinearTexture( int width, int height )
 {
     auto it = _pitched_mem_uchar_linear_tex_cache.find( PitchedMem_Tex_Index( width, height ) );
     if( it == _pitched_mem_uchar_linear_tex_cache.end() )
     {
         std::cerr << "Allocate pitched mem uchar4 with linear tex " << width << "X" << height << std::endl;
-        PitchedMem_LinearTexture<uchar>* ptr = new PitchedMem_LinearTexture<uchar>( width, height );
+        PitchedMem_LinearTexture<uchar,cudaFilterModeLinear>* ptr = new PitchedMem_LinearTexture<uchar,cudaFilterModeLinear>( width, height );
         return ptr;
     }
     else
     {
         std::cerr << "Getting pitched mem uchar4 with linear tex " << width << "X" << height << std::endl;
-        PitchedMem_LinearTexture<uchar>* ptr = it->second;
+        PitchedMem_LinearTexture<uchar,cudaFilterModeLinear>* ptr = it->second;
         _pitched_mem_uchar_linear_tex_cache.erase( it );
         return ptr;
     }
 }
 
-void GlobalData::putPitchedMemUchar_LinearTexture( PitchedMem_LinearTexture<unsigned char>* ptr )
+void GlobalData::putPitchedMemUchar_LinearTexture( PitchedMem_LinearTexture<unsigned char,cudaFilterModeLinear>* ptr )
 {
     int width  = ptr->mem->getSize()[0];
     int height = ptr->mem->getSize()[1];
     std::cerr << "Putting pitched mem uchar4 with linear tex " << width << "X" << height << std::endl;
     PitchedMem_Tex_Index idx( width, height );
     _pitched_mem_uchar_linear_tex_cache.insert(
-        std::pair<PitchedMem_Tex_Index,PitchedMem_LinearTexture<uchar>*>(
+        std::pair<PitchedMem_Tex_Index,PitchedMem_LinearTexture<uchar,cudaFilterModeLinear>*>(
             idx, ptr ) );
 }
 

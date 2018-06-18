@@ -3235,7 +3235,7 @@ void ps_reprojectRGBTcImageByDepthMap(CudaHostMemoryHeap<uchar4, 2>* iTcoRcRgbIm
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // CudaDeviceMemoryPitched<uchar4, 2> iTcoRcimg_dmp(*iTcoRcRgbImage_hmh);
-    PitchedMem_LinearTexture<uchar4>* iTcoRcimg_dmp =
+    auto iTcoRcimg_dmp =
         global_data.getPitchedMemUchar4_LinearTexture(
             iTcoRcRgbImage_hmh->getSize()[0],
             iTcoRcRgbImage_hmh->getSize()[1] );
@@ -3347,7 +3347,7 @@ void ps_retexture(CudaHostMemoryHeap<uchar4, 2>* bmpOrig_hmh, CudaHostMemoryHeap
 
     // CudaArray<uchar4, 2> bmpOrig_arr(*bmpOrig_hmh);
     // cudaBindTextureToArray(r4tex, bmpOrig_arr.getArray(), cudaCreateChannelDesc<uchar4>());
-    PitchedMem_LinearTexture<uchar4>* bmpOrig_arr =
+    auto bmpOrig_arr =
         global_data.getPitchedMemUchar4_LinearTexture(
             bmpOrig_hmh->getSize()[0],
             bmpOrig_hmh->getSize()[1] );

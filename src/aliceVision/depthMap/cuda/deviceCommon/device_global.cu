@@ -14,22 +14,6 @@ namespace depthMap {
 // Global data handlers and parameters
 // defines
 
-// texture<unsigned char, 2, cudaReadModeNormalizedFloat> rtex;
-// texture<unsigned char, 2, cudaReadModeNormalizedFloat> ttex;
-// texture<unsigned char, 2, cudaReadModeNormalizedFloat> gtex;
-// texture<unsigned char, 2, cudaReadModeNormalizedFloat> btex;
-
-// texture<uchar4, 2, cudaReadModeNormalizedFloat> r4tex;
-// texture<uchar4, 2, cudaReadModeNormalizedFloat> t4tex;
-// texture<float, 1, cudaReadModeElementType> gaussianTex;
-
-texture<unsigned char, 2, cudaReadModeNormalizedFloat> wshtex;
-texture<float, 2, cudaReadModeElementType> watex;
-
-CudaArray<char4, 2>** texs_arr = NULL;
-CudaArray<unsigned char, 2>** wshs_arr = NULL;
-CudaArray<float, 2>* watex_arr = NULL;
-
 ////////////////////////////////////////////////////////////////////////////////
 // CONSTANT MEMORY
 

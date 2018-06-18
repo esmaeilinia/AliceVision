@@ -17,26 +17,6 @@ inline static __device__ int clamp(int x, int a, int b)
     return max(a, min(b, x));
 }
 
-
-// Global data handlers and parameters
-// defines
-
-// extern texture<unsigned char, 2, cudaReadModeNormalizedFloat> rtex;
-// extern texture<unsigned char, 2, cudaReadModeNormalizedFloat> ttex;
-// extern texture<unsigned char, 2, cudaReadModeNormalizedFloat> gtex;
-// extern texture<unsigned char, 2, cudaReadModeNormalizedFloat> btex;
-
-// extern texture<uchar4, 2, cudaReadModeNormalizedFloat> r4tex;
-// extern texture<uchar4, 2, cudaReadModeNormalizedFloat> t4tex;
-// extern texture<float, 1, cudaReadModeElementType> gaussianTex;
-
-extern texture<unsigned char, 2, cudaReadModeNormalizedFloat> wshtex;
-extern texture<float, 2, cudaReadModeElementType> watex;
-
-extern CudaArray<char4, 2>** texs_arr;
-extern CudaArray<unsigned char, 2>** wshs_arr;
-extern CudaArray<float, 2>* watex_arr;
-
 ////////////////////////////////////////////////////////////////////////////////
 // CONSTANT MEMORY
 

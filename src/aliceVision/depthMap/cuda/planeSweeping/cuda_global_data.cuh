@@ -28,7 +28,7 @@ struct GaussianArray
 
 typedef std::pair<int,int> PitchedMem_Tex_Index;
 
-template<typename T>
+template<typename T,cudaTextureFilterMode fMode>
 struct PitchedMem_LinearTexture
 {
     CudaDeviceMemoryPitched<T,2>* mem;
@@ -45,7 +45,7 @@ struct PitchedMem_LinearTexture
         tex_desc.addressMode[1]   = cudaAddressModeClamp;
         tex_desc.addressMode[2]   = cudaAddressModeClamp;
         tex_desc.readMode         = cudaReadModeNormalizedFloat;
-        tex_desc.filterMode       = cudaFilterModeLinear;
+        tex_desc.filterMode       = fMode;
 
         cudaResourceDesc res_desc;
         res_desc.resType = cudaResourceTypePitch2D;
@@ -88,11 +88,11 @@ public:
     CudaDeviceMemoryPitched<uchar4,2>& getPyramidArray( int level );
     cudaTextureObject_t                getPyramidTex( int level );
 
-    PitchedMem_LinearTexture<uchar4>*  getPitchedMemUchar4_LinearTexture( int width, int height );
-    void                               putPitchedMemUchar4_LinearTexture( PitchedMem_LinearTexture<uchar4>* ptr );
+    PitchedMem_LinearTexture<uchar4,cudaFilterModeLinear>*  getPitchedMemUchar4_LinearTexture( int width, int height );
+    void                                                    putPitchedMemUchar4_LinearTexture( PitchedMem_LinearTexture<uchar4,cudaFilterModeLinear>* ptr );
 
-    PitchedMem_LinearTexture<uchar>*   getPitchedMemUchar_LinearTexture( int width, int height );
-    void                               putPitchedMemUchar_LinearTexture( PitchedMem_LinearTexture<uchar>* ptr );
+    PitchedMem_LinearTexture<uchar,cudaFilterModeLinear>*   getPitchedMemUchar_LinearTexture( int width, int height );
+    void                                                    putPitchedMemUchar_LinearTexture( PitchedMem_LinearTexture<uchar,cudaFilterModeLinear>* ptr );
 
 private:
     std::map<GaussianArrayIndex,GaussianArray*> _gaussian_arr_table;
@@ -105,8 +105,8 @@ private:
     std::vector<cudaTextureObject_t>                 _pyramid_tex;
     int                                              _pyramid_levels;
 
-    std::multimap<PitchedMem_Tex_Index,PitchedMem_LinearTexture<uchar4>*> _pitched_mem_uchar4_linear_tex_cache;
-    std::multimap<PitchedMem_Tex_Index,PitchedMem_LinearTexture<uchar>*>  _pitched_mem_uchar_linear_tex_cache;
+    std::multimap<PitchedMem_Tex_Index,PitchedMem_LinearTexture<uchar4,cudaFilterModeLinear>*> _pitched_mem_uchar4_linear_tex_cache;
+    std::multimap<PitchedMem_Tex_Index,PitchedMem_LinearTexture<uchar,cudaFilterModeLinear>*>  _pitched_mem_uchar_linear_tex_cache;
 };
 
 /*
