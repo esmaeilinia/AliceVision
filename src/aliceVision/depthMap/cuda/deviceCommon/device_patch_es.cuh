@@ -80,7 +80,6 @@ inline __device__ void computeRotCSEpip(patch& ptch, const float3& p)
  * 
  * @return similarity value
  */
-/* used in device_code.cu device_code_refine.cu device_code_volume.cu */
 inline __device__ float compNCCby3DptsYK(
     cudaTextureObject_t r4tex,
     cudaTextureObject_t t4tex,

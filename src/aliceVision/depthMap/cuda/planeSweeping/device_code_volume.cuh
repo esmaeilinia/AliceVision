@@ -6,8 +6,7 @@
 
 #pragma once
 
-#include "aliceVision/depthMap/cuda/deviceCommon/device_matrix.cuh"
-#include "aliceVision/depthMap/cuda/deviceCommon/device_color.cuh"
+#include "aliceVision/depthMap/cuda/deviceCommon/device_patch_es.cuh"
 
 namespace aliceVision {
 namespace depthMap {

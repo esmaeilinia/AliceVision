@@ -8,11 +8,6 @@
 
 #include "aliceVision/depthMap/cuda/planeSweeping/device_utils.cuh"
 
-#include "aliceVision/depthMap/cuda/deviceCommon/device_global.cuh"
-#include "aliceVision/depthMap/cuda/deviceCommon/device_matrix.cuh"
-#include "aliceVision/depthMap/cuda/deviceCommon/device_color.cuh"
-#include "aliceVision/depthMap/cuda/deviceCommon/device_eig33.cuh"
-#include "aliceVision/depthMap/cuda/deviceCommon/device_simStat.cuh"
 #include "aliceVision/depthMap/cuda/deviceCommon/device_patch_es.cuh"
 
 #include <math_constants.h>
