@@ -4,6 +4,15 @@
 // v. 2.0. If a copy of the MPL was not distributed with this file,
 // You can obtain one at https://mozilla.org/MPL/2.0/.
 
+#include "aliceVision/depthMap/cuda/planeSweeping/device_code_volume.cuh"
+
+#include "aliceVision/depthMap/cuda/planeSweeping/device_code.cuh"
+#include "aliceVision/depthMap/cuda/planeSweeping/device_utils.cuh"
+
+#include "aliceVision/depthMap/cuda/deviceCommon/device_matrix.cuh"
+#include "aliceVision/depthMap/cuda/deviceCommon/device_color.cuh"
+#include "aliceVision/depthMap/cuda/deviceCommon/device_patch_es.cuh"
+
 namespace aliceVision {
 namespace depthMap {
 
@@ -123,71 +132,6 @@ __global__ void volume_transposeAddAvgVolume_kernel(unsigned char* volumeT, int 
     }
 }
 
-template <typename T>
-__global__ void volume_transposeVolume_kernel(T* volumeT, int volumeT_s, int volumeT_p, 
-                                              const T* volume, int volume_s, int volume_p, 
-                                              int volDimX, int volDimY, int volDimZ, 
-                                              int dimTrnX, int dimTrnY, int dimTrnZ, 
-                                              int z)
-{
-    int vx = blockIdx.x * blockDim.x + threadIdx.x;
-    int vy = blockIdx.y * blockDim.y + threadIdx.y;
-    int vz = z;
-
-    if((vx >= 0) && (vx < volDimX) && (vy >= 0) && (vy < volDimY) && (vz >= 0) && (vz < volDimZ))
-    {
-        int v[3];
-        v[0] = vx;
-        v[1] = vy;
-        v[2] = vz;
-
-        int dimsTrn[3];
-        dimsTrn[0] = dimTrnX;
-        dimsTrn[1] = dimTrnY;
-        dimsTrn[2] = dimTrnZ;
-
-        int vTx = v[dimsTrn[0]];
-        int vTy = v[dimsTrn[1]];
-        int vTz = v[dimsTrn[2]];
-
-        T* oldVal_ptr = get3DBufferAt(volumeT, volumeT_s, volumeT_p, vTx, vTy, vTz);
-        T newVal = *get3DBufferAt(volume, volume_s, volume_p, vx, vy, vz);
-        *oldVal_ptr = newVal;
-    }
-}
-
-template <typename T>
-__global__ void volume_shiftZVolumeTempl_kernel(T* volume, int volume_s, int volume_p, int volDimX, int volDimY,
-                                                int volDimZ, int vz)
-{
-    int vx = blockIdx.x * blockDim.x + threadIdx.x;
-    int vy = blockIdx.y * blockDim.y + threadIdx.y;
-
-    if((vx >= 0) && (vx < volDimX) && (vy >= 0) && (vy < volDimY) && (vz >= 0) && (vz < volDimZ))
-    {
-        T* v1_ptr = get3DBufferAt(volume, volume_s, volume_p, vx, vy, vz);
-        T* v2_ptr = get3DBufferAt(volume, volume_s, volume_p, vx, vy, volDimZ - 1 - vz);
-        T v1 = *v1_ptr;
-        T v2 = *v2_ptr;
-        *v1_ptr = v2;
-        *v2_ptr = v1;
-    }
-}
-
-template <typename T>
-__global__ void volume_initVolume_kernel(T* volume, int volume_s, int volume_p, int volDimX, int volDimY, int volDimZ,
-                                         int vz, T cst)
-{
-    int vx = blockIdx.x * blockDim.x + threadIdx.x;
-    int vy = blockIdx.y * blockDim.y + threadIdx.y;
-
-    if((vx >= 0) && (vx < volDimX) && (vy >= 0) && (vy < volDimY) && (vz >= 0) && (vz < volDimZ))
-    {
-        T* volume_zyx = get3DBufferAt(volume, volume_s, volume_p, vx, vy, vz);
-        *volume_zyx = cst;
-    }
-}
-
 __global__ void volume_updateMinXSlice_kernel(unsigned char* volume, int volume_s, int volume_p,
                                               unsigned char* xySliceBestSim, int xySliceBestSim_p, int* xySliceBestZ,
                                               int xySliceBestZ_p, int volDimX, int volDimY, int volDimZ, int vz)
@@ -204,21 +148,6 @@ __global__ void volume_updateMinXSlice_kernel(unsigned char* volume, int volume_
             *actSim_ptr = sim;
             *get2DBufferAt(xySliceBestZ, xySliceBestZ_p, vx, vy) = vz;
         }
-    }
-}
-
-template <typename T1, typename T2>
-__global__ void volume_getVolumeXYSliceAtZ_kernel(T1* xySlice, int xySlice_p, T2* volume, int volume_s, int volume_p,
-                                                  int volDimX, int volDimY, int volDimZ, int vz)
-{
-    int vx = blockIdx.x * blockDim.x + threadIdx.x;
-    int vy = blockIdx.y * blockDim.y + threadIdx.y;
-
-    if((vx >= 0) && (vx < volDimX) && (vy >= 0) && (vy < volDimY) && (vz >= 0) && (vz < volDimZ))
-    {
-        T2* volume_zyx = get3DBufferAt(volume, volume_s, volume_p, vx, vy, vz);
-        T1* xySlice_yx = get2DBufferAt(xySlice, xySlice_p, vx, vy);
-        *xySlice_yx = (T1)(*volume_zyx);
     }
 }
 

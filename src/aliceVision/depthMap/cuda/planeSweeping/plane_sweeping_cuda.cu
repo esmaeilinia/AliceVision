@@ -4,20 +4,26 @@
 // v. 2.0. If a copy of the MPL was not distributed with this file,
 // You can obtain one at https://mozilla.org/MPL/2.0/.
 
-#include <aliceVision/depthMap/cuda/commonStructures.hpp>
-#include <aliceVision/depthMap/cuda/deviceCommon/device_color.cu>
-#include <aliceVision/depthMap/cuda/deviceCommon/device_patch_es.cu>
-#include <aliceVision/depthMap/cuda/deviceCommon/device_eig33.cu>
-#include <aliceVision/depthMap/cuda/planeSweeping/device_code.cu>
-#include <aliceVision/depthMap/cuda/planeSweeping/device_code_refine.cu>
-#include <aliceVision/depthMap/cuda/planeSweeping/device_code_volume.cu>
-#include <aliceVision/depthMap/cuda/planeSweeping/device_code_fuse.cu>
+#include "aliceVision/depthMap/cuda/planeSweeping/plane_sweeping_cuda.hpp"
+
+#include "aliceVision/depthMap/cuda/commonStructures.hpp"
+
+#include "aliceVision/depthMap/cuda/planeSweeping/cuda_global_data.cuh"
+#include "aliceVision/depthMap/cuda/planeSweeping/device_code.cuh"
+#include "aliceVision/depthMap/cuda/planeSweeping/device_code_refine.cuh"
+#include "aliceVision/depthMap/cuda/planeSweeping/device_code_volume.cuh"
+#include "aliceVision/depthMap/cuda/planeSweeping/device_code_fuse.cuh"
+
+#include "aliceVision/depthMap/cuda/deviceCommon/device_color.cuh"
+#include "aliceVision/depthMap/cuda/deviceCommon/device_patch_es.cuh"
+#include "aliceVision/depthMap/cuda/deviceCommon/device_eig33.cuh"
+#include "aliceVision/depthMap/cuda/deviceCommon/device_global.cuh"
 
 #include <math_constants.h>
+#include <iostream>
+#include <map>
 
 #include <algorithm>
-
-#define GRIFF_TEST
 
 namespace aliceVision {
 namespace depthMap {
@@ -34,11 +40,6 @@ namespace depthMap {
                                                                               \
 }
 
-
-// Round a / b to nearest higher integer value.
-inline unsigned int divUp(unsigned int a, unsigned int b) {
-  return (a % b != 0) ? (a / b + 1) : (a / b);
-}
 
 __host__ float3 ps_M3x3mulV3(float* M3x3, const float3& V)
 {
@@ -180,26 +181,10 @@ sizeof(float)*DCT_DIMENSION*DCT_DIMENSION*DCT_DIMENSION*DCT_DIMENSION);
 }
 */
 
-__host__ cudaArray* ps_create_gaussian_arr(float delta, int radius)
+__host__ GaussianArray* ps_create_gaussian_arr(float delta, int radius)
 {
-    int size = 2 * radius + 1;
-
-    float* d_gaussian;
-    cudaMalloc((void**)&d_gaussian, (2 * radius + 1) * sizeof(float));
-
-    // generate gaussian array
-    generateGaussian_kernel<<<1, size>>>(d_gaussian, delta, radius);
-    cudaThreadSynchronize();
-
-    cudaArray* d_gaussianArray = NULL;
-
-    // create cuda array
-    cudaChannelFormatDesc channelDesc = cudaCreateChannelDesc(32, 0, 0, 0, cudaChannelFormatKindFloat);
-    cudaMallocArray(&d_gaussianArray, &channelDesc, size, 1);
-    cudaMemcpyToArray(d_gaussianArray, 0, 0, d_gaussian, size * sizeof(float), cudaMemcpyDeviceToDevice);
-    cudaFree(d_gaussian);
-
-    return d_gaussianArray;
+    std::cerr << "Fetching Gaussian table for radius " << radius << " and delta " << delta << std::endl;
+    return global_data.getGaussianArray( delta, radius );
 }
 
 int ps_listCUDADevices(bool verbose)
@@ -365,8 +350,8 @@ void ps_deviceUpdateCam(CudaArray<uchar4, 2>** ps_texs_arr, cameraStruct* cam, i
     for(int scale = 1; scale < scales; scale++)
     {
         int radius = scale + 1;
-        cudaArray* gaussian_arr = ps_create_gaussian_arr(1.0f, radius);
-        cudaBindTextureToArray(gaussianTex, gaussian_arr, cudaCreateChannelDesc<float>());
+        GaussianArray* gaussian_arr = ps_create_gaussian_arr(1.0f, radius);
+        cudaBindTextureToArray(gaussianTex, gaussian_arr->arr, cudaCreateChannelDesc<float>());
 
         int block_size = 8;
         dim3 block(block_size, block_size, 1);
@@ -396,7 +381,7 @@ void ps_deviceUpdateCam(CudaArray<uchar4, 2>** ps_texs_arr, cameraStruct* cam, i
         };
 
         cudaUnbindTexture(gaussianTex);
-        cudaFreeArray(gaussian_arr);
+        // cudaFreeArray(gaussian_arr);
     };
 
     cudaUnbindTexture(r4tex);
@@ -421,13 +406,7 @@ void ps_planeSweepingGPUPixels(CudaArray<uchar4, 2>** ps_texs_arr, CudaHostMemor
                                CudaHostMemoryHeap<float, 2>& depths_hmh, int slicesAtTime, int ntimes, int npixs,
                                int wsh, int kernelSizeHalf, int nPlanes, int scale, int CUDAdeviceNo,
                                int ncamsAllocated, int scales, bool verbose, bool doUsePixelsDepths, int nbest,
-                               bool useTcOrRcPixSize, float gammaC, float gammaP, bool subPixel, float epipShift = 0.0f
-                               /*,
-                               CudaHostMemoryHeap<float,2>  &sliceRef_hmh,
-                               CudaHostMemoryHeap<float3,2>  &slicePts_hmh,
-                               CudaHostMemoryHeap<float,2>  &sliceLocMin_hmh,
-                               CudaHostMemoryHeap<int,2>  &bdid_hmh*/
-                               )
+                               bool useTcOrRcPixSize, float gammaC, float gammaP, bool subPixel, float epipShift )
 {
     clock_t tall = tic();
     testCUDAdeviceNo(CUDAdeviceNo);
@@ -1655,7 +1634,7 @@ void ps_planeSweepingGPUPixelsFine(CudaArray<uchar4, 2>** ps_texs_arr, CudaHostM
                                    CudaHostMemoryHeap<float4, 2>& normals_hmh, int slicesAtTime, int ntimes,
                                    int npixs, int wsh, int kernelSizeHalf, int nPlanes, int scale, int CUDAdeviceNo,
                                    int ncamsAllocated, int scales, bool verbose, float gammaC, float gammaP,
-                                   float epipShift = 0.0f)
+                                   float epipShift )
 {
     clock_t tall = tic();
     testCUDAdeviceNo(CUDAdeviceNo);
@@ -2820,7 +2799,7 @@ void ps_refineRcDepthMap(CudaArray<uchar4, 2>** ps_texs_arr, float* osimMap_hmh,
 
     if(verbose)
         printf("gpu elapsed time: %f ms \n", toc(tall));
-};
+}
 
 /**
  * @brief ps_fuseDepthSimMapsGaussianKernelVoting
@@ -3251,7 +3230,7 @@ void ps_getSilhoueteMap(CudaArray<uchar4, 2>** ps_texs_arr, CudaHostMemoryHeap<b
     testCUDAdeviceNo(CUDAdeviceNo);
 
     uchar4 maskColorLab;
-    float3 flab = h_xyz2lab(h_rgb2xyz(uchar4_to_float3(maskColorRgb)));
+    float3 flab = xyz2lab(rgb2xyz(uchar4_to_float3(maskColorRgb)));
     maskColorLab.x = (unsigned char)(flab.x);
     maskColorLab.y = (unsigned char)(flab.y);
     maskColorLab.z = (unsigned char)(flab.z);

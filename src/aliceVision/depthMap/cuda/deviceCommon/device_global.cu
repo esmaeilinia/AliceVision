@@ -4,20 +4,12 @@
 // v. 2.0. If a copy of the MPL was not distributed with this file,
 // You can obtain one at https://mozilla.org/MPL/2.0/.
 
-#pragma once
+#include "aliceVision/depthMap/cuda/deviceCommon/device_global.cuh"
 
-#include <aliceVision/depthMap/cuda/commonStructures.hpp>
+#include "aliceVision/depthMap/cuda/commonStructures.hpp"
 
 namespace aliceVision {
 namespace depthMap {
-
-// Helper functions
-// function clamping x between a and b
-__device__ int clamp(int x, int a, int b)
-{
-    return max(a, min(b, x));
-}
-
 
 // Global data handlers and parameters
 // defines

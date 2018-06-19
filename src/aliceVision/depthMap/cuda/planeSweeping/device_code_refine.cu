@@ -4,6 +4,14 @@
 // v. 2.0. If a copy of the MPL was not distributed with this file,
 // You can obtain one at https://mozilla.org/MPL/2.0/.
 
+#include "aliceVision/depthMap/cuda/planeSweeping/device_code_refine.cuh"
+
+#include "aliceVision/depthMap/cuda/planeSweeping/device_code.cuh"
+
+#include "aliceVision/depthMap/cuda/deviceCommon/device_matrix.cuh"
+#include "aliceVision/depthMap/cuda/deviceCommon/device_color.cuh"
+#include "aliceVision/depthMap/cuda/deviceCommon/device_patch_es.cuh"
+
 namespace aliceVision {
 namespace depthMap {
 
@@ -489,8 +497,6 @@ __global__ void refine_fuseThreeDepthSimMaps_kernel(float* osim, int osim_p, flo
         odpt[y * odpt_p + x] = outDpt;
     };
 }
-
-#define GRIFF_TEST
 
 #ifdef GRIFF_TEST
 

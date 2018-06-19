@@ -4,9 +4,16 @@
 // v. 2.0. If a copy of the MPL was not distributed with this file,
 // You can obtain one at https://mozilla.org/MPL/2.0/.
 
-#pragma once
+#include "aliceVision/depthMap/cuda/planeSweeping/device_code.cuh"
 
-#include <aliceVision/depthMap/cuda/planeSweeping/device_utils.cu>
+#include "aliceVision/depthMap/cuda/planeSweeping/device_utils.cuh"
+
+#include "aliceVision/depthMap/cuda/deviceCommon/device_global.cuh"
+#include "aliceVision/depthMap/cuda/deviceCommon/device_matrix.cuh"
+#include "aliceVision/depthMap/cuda/deviceCommon/device_color.cuh"
+#include "aliceVision/depthMap/cuda/deviceCommon/device_eig33.cuh"
+#include "aliceVision/depthMap/cuda/deviceCommon/device_simStat.cuh"
+#include "aliceVision/depthMap/cuda/deviceCommon/device_patch_es.cuh"
 
 #include <math_constants.h>
 
@@ -111,53 +118,6 @@ __global__ void compute_varLofLABtoW_kernel(uchar4* labMap, int labMap_p, int wi
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
-
-__device__ void move3DPointByRcPixSize(float3& p, float rcPixSize)
-{
-    float3 rpv = p - sg_s_rC;
-    normalize(rpv);
-    p = p + rpv * rcPixSize;
-}
-
-__device__ void move3DPointByTcPixStep(float3& p, float tcPixStep)
-
-{
-    float3 rpv = sg_s_rC - p;
-    float3 prp = p;
-    float3 prp1 = p + rpv / 2.0f;
-
-    float2 rp;
-    getPixelFor3DPointRC(rp, prp);
-
-    float2 tpo;
-    getPixelFor3DPointTC(tpo, prp);
-
-    float2 tpv;
-    getPixelFor3DPointTC(tpv, prp1);
-
-    tpv = tpv - tpo;
-    normalize(tpv);
-
-    float2 tpd = tpo + tpv * tcPixStep;
-
-    p = triangulateMatchRef(rp, tpd);
-}
-
-__device__ float move3DPointByTcOrRcPixStep(float3& p, float pixStep, bool moveByTcOrRc)
-{
-    if(moveByTcOrRc == true)
-    {
-        move3DPointByTcPixStep(p, pixStep);
-        return 0.0f;
-    }
-    else
-    {
-        float pixSize = pixStep * computePixSize(p);
-        move3DPointByRcPixSize(p, pixSize);
-
-        return pixSize;
-    }
-}
 
 __device__ void computePatch(patch& ptch, int depthid, int ndepths, int2& pix, int pixid, int t, bool doUsePixelsDepths,
                              bool useTcOrRcPixSize)
@@ -273,8 +233,6 @@ __global__ void slice_fine_kernel(float* slice, int slice_p,
         ptcho.n.z = normal.z;
         ptcho.d = pixSize;
         computeRotCS(ptcho.x, ptcho.y, ptcho.n);
-        // float sim = compNCCby3DptsSeg(ptcho, wsh);
-        // float sim = compNCCby3Dpts(ptcho, wsh);
         float sim = compNCCby3DptsYK(ptcho, wsh, width, height, gammaC, gammaP, epipShift);
         // coalescent
         int sliceid = pixid * slice_p + depthid;
