@@ -289,8 +289,12 @@ __global__ void refine_reprojTarTexLABByDepthMapMovedByStep_kernel(
     };
 }
 
-__global__ void refine_compYKNCCSimMap_kernel(float* osimMap, int osimMap_p, float* depthMap, int depthMap_p, int width,
-                                              int height, int wsh, const float gammaC, const float gammaP)
+__global__ void refine_compYKNCCSimMap_kernel(
+    cudaTextureObject_t rTexU4,
+    cudaTextureObject_t tTexU4,
+    float* osimMap, int osimMap_p,
+    float* depthMap, int depthMap_p,
+    int width, int height, int wsh, const float gammaC, const float gammaP)
 {
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
@@ -303,14 +307,14 @@ __global__ void refine_compYKNCCSimMap_kernel(float* osimMap, int osimMap_p, flo
         if(depth > 0.0f)
         {
             simStat sst = simStat();
-            float4 rcm = uchar4_to_float4(tex2D(rTexU4, x, y));
-            float4 tcm = uchar4_to_float4(tex2D(tTexU4, x, y));
+            float4 rcm = uchar4_to_float4(tex2D<uchar4>(rTexU4, x, y));
+            float4 tcm = uchar4_to_float4(tex2D<uchar4>(tTexU4, x, y));
             for(int yp = -wsh; yp <= +wsh; yp++)
             {
                 for(int xp = -wsh; xp <= +wsh; xp++)
                 {
-                    float4 rc = uchar4_to_float4(tex2D(rTexU4, x + xp, y + yp));
-                    float4 tc = uchar4_to_float4(tex2D(tTexU4, x + xp, y + yp));
+                    float4 rc = uchar4_to_float4(tex2D<uchar4>(rTexU4, x + xp, y + yp));
+                    float4 tc = uchar4_to_float4(tex2D<uchar4>(tTexU4, x + xp, y + yp));
                     float w =
                         CostYKfromLab(xp, yp, rcm, rc, gammaC, gammaP) * CostYKfromLab(xp, yp, tcm, tc, gammaC, gammaP);
                     sst.update((float)rc.x, (float)tc.x, w);
@@ -324,8 +328,13 @@ __global__ void refine_compYKNCCSimMap_kernel(float* osimMap, int osimMap_p, flo
     };
 }
 
-__global__ void refine_compYKNCCSim_kernel(float3* osims, int osims_p, int id, float* depthMap, int depthMap_p,
-                                           int width, int height, int wsh, const float gammaC, const float gammaP)
+__global__ void refine_compYKNCCSim_kernel(
+    cudaTextureObject_t rTexU4,
+    cudaTextureObject_t tTexU4,
+    float3* osims, int osims_p,
+    int id,
+    float* depthMap, int depthMap_p,
+    int width, int height, int wsh, const float gammaC, const float gammaP)
 {
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
@@ -342,14 +351,14 @@ __global__ void refine_compYKNCCSim_kernel(float3* osims, int osims_p, int id, f
         if(depth > 0.0f)
         {
             simStat sst = simStat();
-            float4 rcm = uchar4_to_float4(tex2D(rTexU4, x, y));
-            float4 tcm = uchar4_to_float4(tex2D(tTexU4, x, y));
+            float4 rcm = uchar4_to_float4(tex2D<uchar4>(rTexU4, x, y));
+            float4 tcm = uchar4_to_float4(tex2D<uchar4>(tTexU4, x, y));
             for(int yp = -wsh; yp <= +wsh; yp++)
             {
                 for(int xp = -wsh; xp <= +wsh; xp++)
                 {
-                    float4 rc = uchar4_to_float4(tex2D(rTexU4, x + xp, y + yp));
-                    float4 tc = uchar4_to_float4(tex2D(tTexU4, x + xp, y + yp));
+                    float4 rc = uchar4_to_float4(tex2D<uchar4>(rTexU4, x + xp, y + yp));
+                    float4 tc = uchar4_to_float4(tex2D<uchar4>(tTexU4, x + xp, y + yp));
                     float w =
                         CostYKfromLab(xp, yp, rcm, rc, gammaC, gammaP) * CostYKfromLab(xp, yp, tcm, tc, gammaC, gammaP);
                     sst.update((float)rc.x, (float)tc.x, w);
@@ -374,8 +383,13 @@ __global__ void refine_compYKNCCSim_kernel(float3* osims, int osims_p, int id, f
     };
 }
 
-__global__ void refine_compYKNCCSimOptGammaC_kernel(float3* osims, int osims_p, int id, float* depthMap, int depthMap_p,
-                                                    int width, int height, int wsh, const float gammaP)
+__global__ void refine_compYKNCCSimOptGammaC_kernel(
+    cudaTextureObject_t rTexU4,
+    cudaTextureObject_t tTexU4,
+    float3* osims, int osims_p,
+    int id,
+    float* depthMap, int depthMap_p,
+    int width, int height, int wsh, const float gammaP)
 {
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
@@ -401,14 +415,14 @@ __global__ void refine_compYKNCCSimOptGammaC_kernel(float3* osims, int osims_p, 
             {
                 sst[k] = simStat();
             };
-            float4 rcm = uchar4_to_float4(tex2D(rTexU4, x, y));
-            float4 tcm = uchar4_to_float4(tex2D(tTexU4, x, y));
+            float4 rcm = uchar4_to_float4(tex2D<uchar4>(rTexU4, x, y));
+            float4 tcm = uchar4_to_float4(tex2D<uchar4>(tTexU4, x, y));
             for(int yp = -wsh; yp <= +wsh; yp++)
             {
                 for(int xp = -wsh; xp <= +wsh; xp++)
                 {
-                    float4 rc = uchar4_to_float4(tex2D(rTexU4, x + xp, y + yp));
-                    float4 tc = uchar4_to_float4(tex2D(tTexU4, x + xp, y + yp));
+                    float4 rc = uchar4_to_float4(tex2D<uchar4>(rTexU4, x + xp, y + yp));
+                    float4 tc = uchar4_to_float4(tex2D<uchar4>(tTexU4, x + xp, y + yp));
 
                     for(int k = 0; k < 4; k++)
                     {
@@ -1126,8 +1140,12 @@ inline static __device__ double refine_convolveGaussSigma2(float* Im)
     return sum;
 }
 
-__global__ void refine_compPhotoErr_kernel(float* osimMap, int osimMap_p, float* depthMap, int depthMap_p, int width,
-                                           int height, double beta)
+__global__ void refine_compPhotoErr_kernel(
+    cudaTextureObject_t rTexU4,
+    cudaTextureObject_t tTexU4,
+    float* osimMap, int osimMap_p,
+    float* depthMap, int depthMap_p,
+    int width, int height, double beta )
 {
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
@@ -1142,15 +1160,15 @@ __global__ void refine_compPhotoErr_kernel(float* osimMap, int osimMap_p, float*
         float depth = depthMap[y * depthMap_p + x];
         if(depth > 0.0f)
         {
-            float4 tcm = uchar4_to_float4(tex2D(tTexU4, x, y));
+            float4 tcm = uchar4_to_float4(tex2D<uchar4>(tTexU4, x, y));
             if(tcm.w == 0)
             {
                 for(int yp = -2; yp <= +2; yp++)
                 {
                     for(int xp = -2; xp <= +2; xp++)
                     {
-                        rim[(xp + 2) * 5 + yp + 2] = (float)(tex2D(rTexU4, x + xp, y + yp).x);
-                        tim[(xp + 2) * 5 + yp + 2] = (float)(tex2D(tTexU4, x + xp, y + yp).x);
+                        rim[(xp + 2) * 5 + yp + 2] = (float)(tex2D<uchar4>(rTexU4, x + xp, y + yp).x);
+                        tim[(xp + 2) * 5 + yp + 2] = (float)(tex2D<uchar4>(tTexU4, x + xp, y + yp).x);
                     };
                 };
                 ok = true;
@@ -1206,8 +1224,13 @@ __global__ void refine_compPhotoErr_kernel(float* osimMap, int osimMap_p, float*
     };
 }
 
-__global__ void refine_compPhotoErrStat_kernel(float* occMap, int occMap_p, float4* ostat1Map, int ostat1Map_p,
-                                               float* depthMap, int depthMap_p, int width, int height, double beta)
+__global__ void refine_compPhotoErrStat_kernel(
+    cudaTextureObject_t rTexU4,
+    cudaTextureObject_t tTexU4,
+    float* occMap, int occMap_p,
+    float4* ostat1Map, int ostat1Map_p,
+    float* depthMap, int depthMap_p,
+    int width, int height, double beta )
 {
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
@@ -1223,15 +1246,15 @@ __global__ void refine_compPhotoErrStat_kernel(float* occMap, int occMap_p, floa
         float depth = depthMap[y * depthMap_p + x];
         if(depth > 0.0f)
         {
-            float4 tcm = uchar4_to_float4(tex2D(tTexU4, x, y));
+            float4 tcm = uchar4_to_float4(tex2D<uchar4>(tTexU4, x, y));
             if(tcm.w == 0)
             {
                 for(int yp = -2; yp <= +2; yp++)
                 {
                     for(int xp = -2; xp <= +2; xp++)
                     {
-                        rim[(xp + 2) * 5 + yp + 2] = (float)(tex2D(rTexU4, x + xp, y + yp).x);
-                        tim[(xp + 2) * 5 + yp + 2] = (float)(tex2D(tTexU4, x + xp, y + yp).x);
+                        rim[(xp + 2) * 5 + yp + 2] = (float)(tex2D<uchar4>(rTexU4, x + xp, y + yp).x);
+                        tim[(xp + 2) * 5 + yp + 2] = (float)(tex2D<uchar4>(tTexU4, x + xp, y + yp).x);
                     };
                 };
                 ok = true;
@@ -1299,7 +1322,12 @@ __global__ void refine_compPhotoErrStat_kernel(float* occMap, int occMap_p, floa
     };
 }
 
-__global__ void refine_compPhotoErrABG_kernel(float* osimMap, int osimMap_p, int width, int height)
+__global__ void refine_compPhotoErrABG_kernel(
+    cudaTextureObject_t f4Tex,
+    cudaTextureObject_t rTexU4,
+    cudaTextureObject_t tTexU4,
+    float* osimMap, int osimMap_p,
+    int width, int height)
 {
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
@@ -1310,14 +1338,14 @@ __global__ void refine_compPhotoErrABG_kernel(float* osimMap, int osimMap_p, int
 
     if((x > 2) && (y > 2) && (x < width - 2) && (y < height - 2))
     {
-        float4 a = tex2D(f4Tex, x, y);
+        float4 a = tex2D<float4>(f4Tex, x, y);
         if(a.w > 0.0f)
         {
             for(int yp = -2; yp <= +2; yp++)
             {
                 for(int xp = -2; xp <= +2; xp++)
                 {
-                    a = tex2D(f4Tex, x + xp, y + yp);
+                    a = tex2D<float4>(f4Tex, x + xp, y + yp);
                     im[(xp + 2) * 5 + yp + 2].x = a.x;
                     im[(xp + 2) * 5 + yp + 2].y = a.y;
                     im[(xp + 2) * 5 + yp + 2].z = a.z;
@@ -1362,8 +1390,8 @@ __global__ void refine_compPhotoErrABG_kernel(float* osimMap, int osimMap_p, int
         oabg.z = refine_convolveGaussSigma2(tmpIm);
         oabg.w = 1.0f;
 
-        float ric = (float)(tex2D(rTexU4, x, y).x);
-        float tic = (float)(tex2D(tTexU4, x, y).x);
+        float ric = (float)(tex2D<uchar4>(rTexU4, x, y).x);
+        float tic = (float)(tex2D<uchar4>(tTexU4, x, y).x);
 
         osim = oabg.x * ric + oabg.y * tic + oabg.z;
         osim = isinf(osim) ? 1.0f : osim;

@@ -53,14 +53,28 @@ __global__ void refine_reprojTarTexLABByDepthMapMovedByStep_kernel(
     int width, int height, bool moveByTcOrRc,
     float step);
 
-__global__ void refine_compYKNCCSimMap_kernel(float* osimMap, int osimMap_p, float* depthMap, int depthMap_p, int width,
-                                              int height, int wsh, const float gammaC, const float gammaP);
+__global__ void refine_compYKNCCSimMap_kernel(
+    cudaTextureObject_t rTexU4,
+    cudaTextureObject_t tTexU4,
+    float* osimMap, int osimMap_p,
+    float* depthMap, int depthMap_p,
+    int width, int height, int wsh, const float gammaC, const float gammaP);
 
-__global__ void refine_compYKNCCSim_kernel(float3* osims, int osims_p, int id, float* depthMap, int depthMap_p,
-                                           int width, int height, int wsh, const float gammaC, const float gammaP);
+__global__ void refine_compYKNCCSim_kernel(
+    cudaTextureObject_t rTexU4,
+    cudaTextureObject_t tTexU4,
+    float3* osims, int osims_p,
+    int id,
+    float* depthMap, int depthMap_p,
+    int width, int height, int wsh, const float gammaC, const float gammaP);
 
-__global__ void refine_compYKNCCSimOptGammaC_kernel(float3* osims, int osims_p, int id, float* depthMap, int depthMap_p,
-                                                    int width, int height, int wsh, const float gammaP);
+__global__ void refine_compYKNCCSimOptGammaC_kernel(
+    cudaTextureObject_t rTexU4,
+    cudaTextureObject_t tTexU4,
+    float3* osims, int osims_p,
+    int id,
+    float* depthMap, int depthMap_p,
+    int width, int height, int wsh, const float gammaP );
 
 __global__ void refine_computeBestDepthSimMaps_kernel(float* osim, int osim_p, float* odpt, int odpt_p, float3* isims,
                                                       int isims_p, float3* idpts, int idpts_p, int width, int height,
@@ -163,17 +177,33 @@ __global__ void refine_reprojTarTexLABByRcTcDepthsMap_kernel(
     int width, int height,
     float depthMapShift);
 
-__global__ void refine_compPhotoErr_kernel(float* osimMap, int osimMap_p, float* depthMap, int depthMap_p, int width,
-                                           int height, double beta);
+__global__ void refine_compPhotoErr_kernel(
+    cudaTextureObject_t rTexU4,
+    cudaTextureObject_t tTexU4,
+    float* osimMap, int osimMap_p,
+    float* depthMap, int depthMap_p,
+    int width, int height, double beta );
 
-__global__ void refine_compPhotoErrStat_kernel(float* occMap, int occMap_p, float4* ostat1Map, int ostat1Map_p,
-                                               float* depthMap, int depthMap_p, int width, int height, double beta);
+__global__ void refine_compPhotoErrStat_kernel(
+    cudaTextureObject_t rTexU4,
+    cudaTextureObject_t tTexU4,
+    float* occMap, int occMap_p,
+    float4* ostat1Map, int ostat1Map_p,
+    float* depthMap, int depthMap_p,
+    int width, int height, double beta );
 
-__global__ void refine_compPhotoErrABG_kernel(float* osimMap, int osimMap_p, int width, int height);
+__global__ void refine_compPhotoErrABG_kernel(
+    cudaTextureObject_t f4Tex,
+    cudaTextureObject_t rTexU4,
+    cudaTextureObject_t tTexU4,
+    float* osimMap, int osimMap_p,
+    int width, int height );
 
-__global__ void refine_reprojTarSobelAndDPIXTCDRCRcTcDepthsMap_kernel(float4* tex, int tex_p, float* rcDepthMap,
-                                                                      int rcDepthMap_p, int width, int height,
-                                                                      float depthMapShift);
+__global__ void refine_reprojTarSobelAndDPIXTCDRCRcTcDepthsMap_kernel(
+    cudaTextureObject_t tTexU4,
+    float4* tex, int tex_p,
+    float* rcDepthMap, int rcDepthMap_p,
+    int width, int height, float depthMapShift);
 
 __global__ void refine_computeRcTcDepthMap_kernel(float* rcDepthMap, int rcDepthMap_p, int width, int height,
                                                   float pixSizeRatioThr);

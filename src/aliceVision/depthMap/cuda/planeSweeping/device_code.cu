@@ -44,11 +44,11 @@ texture<uint2, 2, cudaReadModeElementType> sliceTexUInt2;
 
 texture<unsigned int, 2, cudaReadModeElementType> sliceTexUInt;
 
-texture<uchar4, 2, cudaReadModeElementType> rTexU4;
+// texture<uchar4, 2, cudaReadModeElementType> rTexU4;
 
-texture<uchar4, 2, cudaReadModeElementType> tTexU4;
+// texture<uchar4, 2, cudaReadModeElementType> tTexU4;
 
-texture<float4, 2, cudaReadModeElementType> f4Tex;
+// texture<float4, 2, cudaReadModeElementType> f4Tex;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -949,7 +949,11 @@ __global__ void compNccSimFromStats_kernel(
     }
 }
 
-__global__ void compWshNccSim_kernel(float* osim, int osim_p, int width, int height, int wsh, int step)
+__global__ void compWshNccSim_kernel(
+    cudaTextureObject_t rTexU4,
+    cudaTextureObject_t tTexU4,
+    float* osim, int osim_p,
+    int width, int height, int wsh, int step )
 {
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
@@ -961,8 +965,8 @@ __global__ void compWshNccSim_kernel(float* osim, int osim_p, int width, int hei
         {
             for(int xp = x * step - wsh; xp <= x * step + wsh; xp++)
             {
-                uchar4 rc = tex2D(rTexU4, xp, yp);
-                uchar4 tc = tex2D(tTexU4, xp, yp);
+                uchar4 rc = tex2D<uchar4>(rTexU4, xp, yp);
+                uchar4 tc = tex2D<uchar4>(tTexU4, xp, yp);
 
                 sst.update((float)rc.x, (float)tc.x, 1.0f);
             }
@@ -973,8 +977,12 @@ __global__ void compWshNccSim_kernel(float* osim, int osim_p, int width, int hei
     }
 }
 
-__global__ void aggrYKNCCSim_kernel(float* osim, int osim_p, int width, int height, int wsh, int step,
-                                    const float gammaC, const float gammaP)
+__global__ void aggrYKNCCSim_kernel(
+    cudaTextureObject_t rTexU4,
+    cudaTextureObject_t tTexU4,
+    float* osim, int osim_p,
+    int width, int height, int wsh, int step,
+    const float gammaC, const float gammaP )
 {
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
@@ -984,15 +992,15 @@ __global__ void aggrYKNCCSim_kernel(float* osim, int osim_p, int width, int heig
         float sums = 0.0f;
         float sumw = 0.0f;
 
-        float4 rcm = uchar4_to_float4(tex2D(rTexU4, x, y));
-        float4 tcm = uchar4_to_float4(tex2D(tTexU4, x, y));
+        float4 rcm = uchar4_to_float4(tex2D<uchar4>(rTexU4, x, y));
+        float4 tcm = uchar4_to_float4(tex2D<uchar4>(tTexU4, x, y));
 
         for(int yp = -wsh; yp <= +wsh; yp++)
         {
             for(int xp = -wsh; xp <= +wsh; xp++)
             {
-                float4 rc = uchar4_to_float4(tex2D(rTexU4, x * step + xp, y * step + yp));
-                float4 tc = uchar4_to_float4(tex2D(tTexU4, x * step + xp, y * step + yp));
+                float4 rc = uchar4_to_float4(tex2D<uchar4>(rTexU4, x * step + xp, y * step + yp));
+                float4 tc = uchar4_to_float4(tex2D<uchar4>(tTexU4, x * step + xp, y * step + yp));
                 float s = tex2D(sliceTex, x * step + xp, y * step + yp);
 
                 float w =
@@ -1172,14 +1180,17 @@ __global__ void ptsStatForRcDepthMap_kernel(
     }
 }
 
-__global__ void getSilhoueteMap_kernel(bool* out, int out_p, int step, int width, int height, const uchar4 maskColorLab)
+__global__ void getSilhoueteMap_kernel(
+    cudaTextureObject_t rTexU4,
+    bool* out, int out_p,
+    int step, int width, int height, const uchar4 maskColorLab )
 {
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
 
     if((x * step < width) && (y * step < height))
     {
-        uchar4 col = tex2D(rTexU4, x * step, y * step);
+        uchar4 col = tex2D<uchar4>(rTexU4, x * step, y * step);
         *get2DBufferAt(out, out_p, x, y) = ((maskColorLab.x == col.x) && (maskColorLab.y == col.y) && (maskColorLab.z == col.z));
     }
 }

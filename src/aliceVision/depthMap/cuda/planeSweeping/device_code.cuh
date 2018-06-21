@@ -43,11 +43,11 @@ extern texture<uint2, 2, cudaReadModeElementType> sliceTexUInt2;
 
 extern texture<unsigned int, 2, cudaReadModeElementType> sliceTexUInt;
 
-extern texture<uchar4, 2, cudaReadModeElementType> rTexU4;
+// extern texture<uchar4, 2, cudaReadModeElementType> rTexU4;
 
-extern texture<uchar4, 2, cudaReadModeElementType> tTexU4;
+// extern texture<uchar4, 2, cudaReadModeElementType> tTexU4;
 
-extern texture<float4, 2, cudaReadModeElementType> f4Tex;
+// extern texture<float4, 2, cudaReadModeElementType> f4Tex;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -203,10 +203,18 @@ __global__ void compNccSimFromStats_kernel(
     float4* stat2, int stat2_p,
     int width, int height, int d, float depth);
 
-__global__ void compWshNccSim_kernel(float* osim, int osim_p, int width, int height, int wsh, int step);
+__global__ void compWshNccSim_kernel(
+    cudaTextureObject_t rTexU4,
+    cudaTextureObject_t tTexU4,
+    float* osim, int osim_p,
+    int width, int height, int wsh, int step );
 
-__global__ void aggrYKNCCSim_kernel(float* osim, int osim_p, int width, int height, int wsh, int step,
-                                    const float gammaC, const float gammaP);
+__global__ void aggrYKNCCSim_kernel(
+    cudaTextureObject_t rTexU4,
+    cudaTextureObject_t tTexU4,
+    float* osim, int osim_p,
+    int width, int height, int wsh, int step,
+    const float gammaC, const float gammaP );
 
 __global__ void updateBestDepth_kernel(
     float* osim, int osim_p,
@@ -238,7 +246,10 @@ __global__ void ptsStatForRcDepthMap_kernel(
     int npts, int width, int height,
     int maxNPixSize, int wsh, const float gammaC, const float gammaP );
 
-__global__ void getSilhoueteMap_kernel(bool* out, int out_p, int step, int width, int height, const uchar4 maskColorLab);
+__global__ void getSilhoueteMap_kernel(
+    cudaTextureObject_t rTexU4,
+    bool* out, int out_p,
+    int step, int width, int height, const uchar4 maskColorLab );
 
 __global__ void retexture_kernel(
     cudaTextureObject_t r4tex,
