@@ -480,10 +480,11 @@ __global__ void volume_update_nModalsMap_kernel_id0(
     }
 }
 
-__global__ void volume_update_nModalsMap_kernel(unsigned short* nModalsMap, int nModalsMap_p,
-                                                unsigned short* rcIdDepthMap, int rcIdDepthMap_p, int volDimX,
-                                                int volDimY, int volDimZ, int volStepXY, int tcDepthMapStep, int width,
-                                                int height, int distLimit, int id)
+__global__ void volume_update_nModalsMap_kernel(
+    unsigned short* nModalsMap, int nModalsMap_p,
+    unsigned short* rcIdDepthMap, int rcIdDepthMap_p, int volDimX,
+    int volDimY, int volDimZ, int volStepXY, int tcDepthMapStep, int width,
+    int height, int distLimit, int id )
 {
     int vx = blockIdx.x * blockDim.x + threadIdx.x;
     int vy = blockIdx.y * blockDim.y + threadIdx.y;
@@ -524,9 +525,10 @@ __global__ void volume_update_nModalsMap_kernel(unsigned short* nModalsMap, int 
     }
 }
 
-__global__ void volume_filterRcIdDepthMapByTcDepthMap_kernel(unsigned short* rcIdDepthMap, int rcIdDepthMap_p,
-                                                             int volDimX, int volDimY, int volDimZ, int volStepXY,
-                                                             int tcDepthMapStep, int width, int height, int distLimit)
+__global__ void volume_filterRcIdDepthMapByTcDepthMap_kernel(
+    unsigned short* rcIdDepthMap, int rcIdDepthMap_p,
+    int volDimX, int volDimY, int volDimZ, int volStepXY,
+    int tcDepthMapStep, int width, int height, int distLimit )
 {
     int vx = blockIdx.x * blockDim.x + threadIdx.x;
     int vy = blockIdx.y * blockDim.y + threadIdx.y;

@@ -97,7 +97,8 @@ __global__ void fuse_getOptDeptMapFromOPtDepthSimMap_kernel(float* optDepthMap, 
 /**
  * @return (smoothStep, energy)
  */
-__device__ float2 getCellSmoothStepEnergy(const int2& cell0)
+static __device__ float2 getCellSmoothStepEnergy(
+    const int2& cell0 )
 {
     float2 out = make_float2(0.0f, 180.0f);
 

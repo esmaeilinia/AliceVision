@@ -98,8 +98,9 @@ __global__ void compute_varLofLABtoW_kernel(
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 
-__device__ void computePatch(patch& ptch, int depthid, int ndepths, int2& pix, int pixid, int t, bool doUsePixelsDepths,
-                             bool useTcOrRcPixSize)
+static __device__ void computePatch(
+    patch& ptch, int depthid, int ndepths, int2& pix, int pixid, int t, bool doUsePixelsDepths,
+    bool useTcOrRcPixSize)
 {
     float3 p;
     float pixSize;
@@ -160,7 +161,7 @@ __global__ void slice_kernel(
     int width, int height, int wsh, int t, int npixs,
     int maxDepth,
     bool doUsePixelsDepths, bool useTcOrRcPixSize, const float gammaC, const float gammaP,
-    const float epipShift)
+    const float epipShift )
 {
     int depthid = blockIdx.x * blockDim.x + threadIdx.x;
     int pixid = blockIdx.y * blockDim.y + threadIdx.y;
@@ -178,7 +179,8 @@ __global__ void slice_kernel(
     }
 }
 
-__device__ float3 computeDepthPoint_fine(float& pixSize, int depthid, int ndepths, int2& pix, int pixid, int t)
+static __device__ float3 computeDepthPoint_fine(
+    float& pixSize, int depthid, int ndepths, int2& pix, int pixid, int t )
 {
     float depth = tex2D(depthsTex, pixid, t);
     float2 rp = make_float2((float)pix.x, (float)pix.y);
@@ -421,10 +423,11 @@ __global__ void computeNormalMap_kernel(
     }
 }
 
-__global__ void locmin_kernel(float* slice, int slice_p, int ndepths, int slicesAtTime,
-                              int width, int height, int wsh, int t, int npixs,
-                              int maxDepth,
-                              bool doUsePixelsDepths, int kernelSizeHalf)
+__global__ void locmin_kernel(
+    float* slice, int slice_p, int ndepths, int slicesAtTime,
+    int width, int height, int wsh, int t, int npixs,
+    int maxDepth,
+    bool doUsePixelsDepths, int kernelSizeHalf)
 {
     int depthid = blockIdx.x * blockDim.x + threadIdx.x;
     int pixid = blockIdx.y * blockDim.y + threadIdx.y;
@@ -458,13 +461,14 @@ __global__ void locmin_kernel(float* slice, int slice_p, int ndepths, int slices
     }
 }
 
-__global__ void getBest_kernel(float* slice, int slice_p,
-                               // int* bestDptId, int bestDptId_p,
-                               float* bestDpt, int bestDpt_p,
-                               float* bestSim, int bestSim_p,
-                               int slicesAtTime, int ndepths, int t, int npixs,
-                               int wsh, int width, int height, bool doUsePixelsDepths, int nbest, bool useTcOrRcPixSize,
-                               bool subPixel)
+__global__ void getBest_kernel(
+    float* slice, int slice_p,
+    // int* bestDptId, int bestDptId_p,
+    float* bestDpt, int bestDpt_p,
+    float* bestSim, int bestSim_p,
+    int slicesAtTime, int ndepths, int t, int npixs,
+    int wsh, int width, int height, bool doUsePixelsDepths, int nbest, bool useTcOrRcPixSize,
+    bool subPixel)
 {
     int pixid = blockIdx.x * blockDim.x + threadIdx.x;
     if((pixid < slicesAtTime) && (slicesAtTime * t + pixid < npixs))
@@ -535,12 +539,13 @@ __global__ void getBest_kernel(float* slice, int slice_p,
     }
 }
 
-__global__ void getBest_fine_kernel(float* slice, int slice_p,
-                                    // int* bestDptId, int bestDptId_p,
-                                    float* bestDpt, int bestDpt_p,
-                                    float* bestSim, int bestSim_p,
-                                    int slicesAtTime, int ndepths, int t, int npixs,
-                                    int wsh, int width, int height)
+__global__ void getBest_fine_kernel(
+    float* slice, int slice_p,
+    // int* bestDptId, int bestDptId_p,
+    float* bestDpt, int bestDpt_p,
+    float* bestSim, int bestSim_p,
+    int slicesAtTime, int ndepths, int t, int npixs,
+    int wsh, int width, int height )
 {
     int pixid = blockIdx.x * blockDim.x + threadIdx.x;
     if((pixid < slicesAtTime) && (slicesAtTime * t + pixid < npixs))

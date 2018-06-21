@@ -20,7 +20,9 @@ __global__ void refine_selectPartOfDepthMapNearFPPlaneDepth_kernel(float* o0dept
                                                                    int height, float fpPlaneDepth,
                                                                    float fpPlaneDepthNext);
 
-__global__ void refine_dilateDepthMap_kernel(float* depthMap, int depthMap_p, int width, int height, const float gammaC);
+__global__ void refine_dilateDepthMap_kernel(
+    float* depthMap, int depthMap_p,
+    int width, int height, const float gammaC );
 
 __global__ void refine_dilateFPPlaneDepthMapXpYp_kernel(float* fpPlaneDepthMap, int fpPlaneDepthMap_p, float* maskMap,
                                                         int maskMap_p, int width, int height, int xp, int yp,
@@ -205,8 +207,9 @@ __global__ void refine_reprojTarSobelAndDPIXTCDRCRcTcDepthsMap_kernel(
     float* rcDepthMap, int rcDepthMap_p,
     int width, int height, float depthMapShift);
 
-__global__ void refine_computeRcTcDepthMap_kernel(float* rcDepthMap, int rcDepthMap_p, int width, int height,
-                                                  float pixSizeRatioThr);
+__global__ void refine_computeRcTcDepthMap_kernel(
+    float* rcDepthMap, int rcDepthMap_p,
+    int width, int height, float pixSizeRatioThr );
 
 } // namespace depthMap
 } // namespace aliceVision

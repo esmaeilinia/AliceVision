@@ -118,37 +118,40 @@ __global__ void smoothDepthMap_kernel(
 __global__ void filterDepthMap_kernel(
     cudaTextureObject_t r4tex,
     float* dmap, int dmap_p,
-    int width, int height, int wsh, const float gammaC, const float minCostThr);
+    int width, int height, int wsh, const float gammaC, const float minCostThr );
 
 __global__ void alignSourceDepthMapToTarget_kernel(
     cudaTextureObject_t r4tex,
     float* dmap, int dmap_p,
-    int width, int height, int wsh, const float gammaC, const float maxPixelSizeDist);
+    int width, int height, int wsh, const float gammaC, const float maxPixelSizeDist );
 
 __global__ void computeNormalMap_kernel(
     cudaTextureObject_t r4tex,
     float3* nmap, int nmap_p,
-    int width, int height, int wsh, const float gammaC, const float gammaP);
+    int width, int height, int wsh, const float gammaC, const float gammaP );
 
-__global__ void locmin_kernel(float* slice, int slice_p, int ndepths, int slicesAtTime,
-                              int width, int height, int wsh, int t, int npixs,
-                              int maxDepth,
-                              bool doUsePixelsDepths, int kernelSizeHalf);
+__global__ void locmin_kernel(
+    float* slice, int slice_p, int ndepths, int slicesAtTime,
+    int width, int height, int wsh, int t, int npixs,
+    int maxDepth,
+    bool doUsePixelsDepths, int kernelSizeHalf );
 
-__global__ void getBest_kernel(float* slice, int slice_p,
-                               // int* bestDptId, int bestDptId_p,
-                               float* bestDpt, int bestDpt_p,
-                               float* bestSim, int bestSim_p,
-                               int slicesAtTime, int ndepths, int t, int npixs,
-                               int wsh, int width, int height, bool doUsePixelsDepths, int nbest, bool useTcOrRcPixSize,
-                               bool subPixel);
+__global__ void getBest_kernel(
+    float* slice, int slice_p,
+    // int* bestDptId, int bestDptId_p,
+    float* bestDpt, int bestDpt_p,
+    float* bestSim, int bestSim_p,
+    int slicesAtTime, int ndepths, int t, int npixs,
+    int wsh, int width, int height, bool doUsePixelsDepths, int nbest, bool useTcOrRcPixSize,
+    bool subPixel );
 
-__global__ void getBest_fine_kernel(float* slice, int slice_p,
-                                    // int* bestDptId, int bestDptId_p,
-                                    float* bestDpt, int bestDpt_p,
-                                    float* bestSim, int bestSim_p,
-                                    int slicesAtTime, int ndepths, int t, int npixs,
-                                    int wsh, int width, int height);
+__global__ void getBest_fine_kernel(
+    float* slice, int slice_p,
+    // int* bestDptId, int bestDptId_p,
+    float* bestDpt, int bestDpt_p,
+    float* bestSim, int bestSim_p,
+    int slicesAtTime, int ndepths, int t, int npixs,
+    int wsh, int width, int height );
 
 
 __global__ void getRefTexLAB_kernel(

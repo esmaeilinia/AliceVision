@@ -50,7 +50,9 @@ __global__ void refine_selectPartOfDepthMapNearFPPlaneDepth_kernel(float* o0dept
     };
 }
 
-__global__ void refine_dilateDepthMap_kernel(float* depthMap, int depthMap_p, int width, int height, const float gammaC)
+__global__ void refine_dilateDepthMap_kernel(
+    float* depthMap, int depthMap_p,
+    int width, int height, const float gammaC )
 {
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
@@ -1444,8 +1446,9 @@ __device__ float2 DPIXTCDRC(const float3& P)
     return op;
 };
 
-__global__ void refine_computeRcTcDepthMap_kernel(float* rcDepthMap, int rcDepthMap_p, int width, int height,
-                                                  float pixSizeRatioThr)
+__global__ void refine_computeRcTcDepthMap_kernel(
+    float* rcDepthMap, int rcDepthMap_p,
+    int width, int height, float pixSizeRatioThr )
 {
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
