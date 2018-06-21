@@ -28,12 +28,6 @@ extern texture<int4, 2, cudaReadModeElementType> volPixsTex;
 
 extern texture<int2, 2, cudaReadModeElementType> pixsTex;
 
-// extern texture<float, 2, cudaReadModeElementType> depthsTex;
-
-// extern texture<float, 2, cudaReadModeElementType> depthsTex1;
-
-// extern texture<float, 2, cudaReadModeElementType> sliceTex;
-
 extern texture<uint2, 2, cudaReadModeElementType> sliceTexUInt2;
 
 extern texture<unsigned int, 2, cudaReadModeElementType> sliceTexUInt;
