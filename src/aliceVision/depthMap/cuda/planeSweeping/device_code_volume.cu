@@ -293,7 +293,7 @@ __global__ void volume_updateRcVolumeForTcDepthMap_kernel(
     const float stepInDepth, const int zPart,
     const int vilDimZGlob, const float maxTcRcPixSizeInVoxRatio,
     const bool considerNegativeDepthAsInfinity,
-    const float2 tcMinMaxFpDepth, const bool useSimilarity)
+    const float2 tcMinMaxFpDepth )
 {
     int vx = blockIdx.x * blockDim.x + threadIdx.x;
     int vy = blockIdx.y * blockDim.y + threadIdx.y;
@@ -321,17 +321,10 @@ __global__ void volume_updateRcVolumeForTcDepthMap_kernel(
         {
             float depthTc = 0.0f;
             float simWeightTc = 1.0f;
-            if(useSimilarity == false)
-            {
-                depthTc = tex2D(sliceTex, tpixMap.x, tpixMap.y);
-            }
-            else
-            {
-                float2 depthSimTc = tex2D<float2>(sliceTexFloat2, tpixMap.x, tpixMap.y);
-                depthTc = depthSimTc.x;
-                // simWeightTc = sigmoid(0.1f,1.0f,1.0f,-0.5f,depthSimTc.y);
-                simWeightTc = depthSimTc.y;
-            }
+            float2 depthSimTc = tex2D<float2>(sliceTexFloat2, tpixMap.x, tpixMap.y);
+            depthTc = depthSimTc.x;
+            // simWeightTc = sigmoid(0.1f,1.0f,1.0f,-0.5f,depthSimTc.y);
+            simWeightTc = depthSimTc.y;
 
             unsigned int Tval = 0;
             unsigned int Vval = (((fpDepthTcP > tcMinMaxFpDepth.x) && (fpDepthTcP < tcMinMaxFpDepth.y) &&
@@ -383,7 +376,7 @@ __global__ void volume_updateRcVolumeForTcDepthMap2_kernel(
     const float stepInDepth, const int zPart,
     const int vilDimZGlob, const float maxTcRcPixSizeInVoxRatio,
     const bool considerNegativeDepthAsInfinity,
-    const float2 tcMinMaxFpDepth, const bool useSimilarity )
+    const float2 tcMinMaxFpDepth )
 {
     int vx = blockIdx.x * blockDim.x + threadIdx.x;
     int vy = blockIdx.y * blockDim.y + threadIdx.y;
@@ -418,17 +411,10 @@ __global__ void volume_updateRcVolumeForTcDepthMap2_kernel(
                 float depthTc = 0.0f;
                 float simWeightTc = 1.0f;
 
-                if(useSimilarity == false)
-                {
-                    depthTc = tex2D(sliceTex, tpixMapAct.x, tpixMapAct.y);
-                }
-                else
-                {
-                    float2 depthSimTc = tex2D<float2>(sliceTexFloat2, tpixMapAct.x, tpixMapAct.y);
-                    depthTc = depthSimTc.x;
-                    // simWeightTc = sigmoid(0.1f,1.0f,1.0f,-0.5f,depthSimTc.y);
-                    simWeightTc = depthSimTc.y;
-                };
+                float2 depthSimTc = tex2D<float2>(sliceTexFloat2, tpixMapAct.x, tpixMapAct.y);
+                depthTc = depthSimTc.x;
+                // simWeightTc = sigmoid(0.1f,1.0f,1.0f,-0.5f,depthSimTc.y);
+                simWeightTc = depthSimTc.y;
                 float3 tp =
                     get3DPointForPixelAndDepthFromTC(make_float2(tpixMapAct.x + 0.5f, tpixMapAct.y + 0.5f), depthTc);
                 float rcPixSize = computeRcPixSize(tp);
@@ -478,6 +464,21 @@ __global__ void volume_updateRcVolumeForTcDepthMap2_kernel(
     }
 }
 #endif
+
+__global__ void volume_update_nModalsMap_kernel_id0(
+    unsigned short* nModalsMap, int nModalsMap_p,
+    int volDimX, int volDimY )
+{
+    int vx = blockIdx.x * blockDim.x + threadIdx.x;
+    int vy = blockIdx.y * blockDim.y + threadIdx.y;
+
+    if((vx >= 0) && (vx < volDimX) && (vy >= 0) && (vy < volDimY))
+    {
+        unsigned short val = 0;
+        unsigned short* nModalsMap_yx = get2DBufferAt(nModalsMap, nModalsMap_p, vx, vy);
+        *nModalsMap_yx = val;
+    }
+}
 
 __global__ void volume_update_nModalsMap_kernel(unsigned short* nModalsMap, int nModalsMap_p,
                                                 unsigned short* rcIdDepthMap, int rcIdDepthMap_p, int volDimX,

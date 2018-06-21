@@ -155,7 +155,7 @@ __global__ void volume_updateRcVolumeForTcDepthMap_kernel(
     const float stepInDepth, const int zPart,
     const int vilDimZGlob, const float maxTcRcPixSizeInVoxRatio,
     const bool considerNegativeDepthAsInfinity,
-    const float2 tcMinMaxFpDepth, const bool useSimilarity );
+    const float2 tcMinMaxFpDepth );
 
 #if 0
 __global__ void volume_updateRcVolumeForTcDepthMap2_kernel(
@@ -169,6 +169,10 @@ __global__ void volume_updateRcVolumeForTcDepthMap2_kernel(
     const bool considerNegativeDepthAsInfinity,
     const float2 tcMinMaxFpDepth, const bool useSimilarity );
 #endif
+
+__global__ void volume_update_nModalsMap_kernel_id0(
+    unsigned short* nModalsMap, int nModalsMap_p,
+    int volDimX, int volDimY );
 
 __global__ void volume_update_nModalsMap_kernel(unsigned short* nModalsMap, int nModalsMap_p,
                                                 unsigned short* rcIdDepthMap, int rcIdDepthMap_p, int volDimX,

@@ -1226,7 +1226,7 @@ void ps_computeRcVolumeForTcDepthSimMaps(CudaHostMemoryHeap<unsigned int, 3>** o
                     vol_dmp.getBuffer(), vol_dmp.stride()[1], vol_dmp.stride()[0],
                     volDimX, volDimY, volDimZpart, z,
                     volStepXY, volStepXY, width, height, fpPlaneDepth, stepInDepth, zPart, volDimZ,
-                    maxTcRcPixSizeInVoxRatio, considerNegativeDepthAsInfinity, tcMinMaxFpDepth, true);
+                    maxTcRcPixSizeInVoxRatio, considerNegativeDepthAsInfinity, tcMinMaxFpDepth );
             }
 
             global_data.pitched_mem_float2_point_tex_cache.put( tcDepthSimMap_dmp );
@@ -1402,10 +1402,9 @@ void ps_filterRcIdDepthMapByTcDepthMaps(CudaHostMemoryHeap<unsigned short, 2>* n
     ps_init_reference_camera_matrices(cams[0]->P, cams[0]->iP, cams[0]->R, cams[0]->iR, cams[0]->K, cams[0]->iK,
                                       cams[0]->C);
 
-    volume_update_nModalsMap_kernel<<<gridvol, blockvol>>>(
-        nModalsMap_dmp.getBuffer(), nModalsMap_dmp.stride()[0], rcIdDepthMap_dmp.getBuffer(), rcIdDepthMap_dmp.stride()[0],
-        volDimX, volDimY, volDimZ, volStepXY, volStepXY, width, height, distLimit, 0);
-    cudaThreadSynchronize();
+    volume_update_nModalsMap_kernel_id0<<<gridvol, blockvol>>>(
+        nModalsMap_dmp.getBuffer(), nModalsMap_dmp.stride()[0],
+        volDimX, volDimY );
 
     for(int c = 1; c < ncams; c++)
     {
