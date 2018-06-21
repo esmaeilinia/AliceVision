@@ -21,6 +21,9 @@ namespace depthMap {
 
 #define MAX_CUDA_DEVICES 10
 
+//
+// All of these are accessed in Point Mode
+//
 extern texture<int4, 2, cudaReadModeElementType> volPixsTex;
 
 extern texture<int2, 2, cudaReadModeElementType> pixsTex;
@@ -31,7 +34,7 @@ extern texture<float, 2, cudaReadModeElementType> depthsTex;
 
 extern texture<float, 2, cudaReadModeElementType> depthsTex1;
 
-extern texture<float4, 2, cudaReadModeElementType> normalsTex;
+// extern texture<float4, 2, cudaReadModeElementType> normalsTex;
 
 extern texture<float, 2, cudaReadModeElementType> sliceTex;
 
@@ -42,12 +45,6 @@ extern texture<unsigned char, 2, cudaReadModeElementType> sliceTexUChar;
 extern texture<uint2, 2, cudaReadModeElementType> sliceTexUInt2;
 
 extern texture<unsigned int, 2, cudaReadModeElementType> sliceTexUInt;
-
-// extern texture<uchar4, 2, cudaReadModeElementType> rTexU4;
-
-// extern texture<uchar4, 2, cudaReadModeElementType> tTexU4;
-
-// extern texture<float4, 2, cudaReadModeElementType> f4Tex;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -115,6 +112,7 @@ __global__ void slice_kernel(
 __global__ void slice_fine_kernel(
     cudaTextureObject_t r4tex,
     cudaTextureObject_t t4tex,
+    cudaTextureObject_t normalsTex,
     float* slice, int slice_p,
     int ndepths, int slicesAtTime,
     int width, int height, int wsh, int t, int npixs,

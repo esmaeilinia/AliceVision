@@ -265,8 +265,8 @@ void ps_deviceAllocate( int ncams, int width, int height, int scales,
     depthsTex.normalized = false;
     depthsTex1.filterMode = cudaFilterModePoint;
     depthsTex1.normalized = false;
-    normalsTex.filterMode = cudaFilterModePoint;
-    normalsTex.normalized = false;
+    // normalsTex.filterMode = cudaFilterModePoint;
+    // normalsTex.normalized = false;
     sliceTex.filterMode = cudaFilterModePoint;
     sliceTex.normalized = false;
     sliceTexFloat2.filterMode = cudaFilterModePoint;
@@ -1714,7 +1714,12 @@ void ps_planeSweepingGPUPixelsFine( CudaHostMemoryHeap<float, 2>* odpt_hmh,
     // copy textures to the device
     CudaArray<int2, 2> pixs_arr(pixs_hmh);
     CudaArray<float, 2> depths_arr(depths_hmh);
-    CudaArray<float4, 2> normals_arr(normals_hmh);
+
+    // CudaArray<float4, 2> normals_arr(normals_hmh);
+    auto normals_dmp = global_data.pitched_mem_float4_point_tex_cache.get(
+        normals_hmh.getSize()[0],
+        normals_hmh.getSize()[1] );
+    copy( *normals_dmp->mem, normals_hmh );
 
     ///////////////////////////////////////////////////////////////////////////////
     // allocate temp memory
@@ -1740,7 +1745,8 @@ void ps_planeSweepingGPUPixelsFine( CudaHostMemoryHeap<float, 2>* odpt_hmh,
 
     cudaBindTextureToArray(pixsTex, pixs_arr.getArray(), cudaCreateChannelDesc<int2>());
     cudaBindTextureToArray(depthsTex, depths_arr.getArray(), cudaCreateChannelDesc<float>());
-    cudaBindTextureToArray(normalsTex, normals_arr.getArray(), cudaCreateChannelDesc<float4>());
+    // cudaBindTextureToArray(normalsTex, normals_arr.getArray(), cudaCreateChannelDesc<float4>());
+    cudaTextureObject_t normalsTex = normals_dmp->tex;
 
     // setup cameras matrices to the constant memory
     ps_init_reference_camera_matrices(cams[0]->P, cams[0]->iP, cams[0]->R, cams[0]->iR, cams[0]->K, cams[0]->iK,
@@ -1762,7 +1768,9 @@ void ps_planeSweepingGPUPixelsFine( CudaHostMemoryHeap<float, 2>* odpt_hmh,
     for(int t = 0; t < ntimes; t++)
     {
         slice_fine_kernel<<<grid, block>>>(
-            r4tex, t4tex,
+            r4tex,
+            t4tex,
+            normalsTex,
             slice_dmp.getBuffer(), slice_dmp.stride()[0],
             nPlanes, slicesAtTime, width,
             height, wsh, t, npixs, nPlanes, gammaC, gammaP, epipShift);
@@ -1786,7 +1794,8 @@ void ps_planeSweepingGPUPixelsFine( CudaHostMemoryHeap<float, 2>* odpt_hmh,
     // cudaUnbindTexture(t4tex);
     cudaUnbindTexture(pixsTex);
     cudaUnbindTexture(depthsTex);
-    cudaUnbindTexture(normalsTex);
+    // cudaUnbindTexture(normalsTex);
+    global_data.pitched_mem_float4_point_tex_cache.put( normals_dmp );
 
     if(verbose)
         printf("gpu elapsed time: %f ms \n", toc(tall));

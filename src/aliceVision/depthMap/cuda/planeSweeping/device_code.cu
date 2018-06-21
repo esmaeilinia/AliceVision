@@ -32,7 +32,7 @@ texture<float, 2, cudaReadModeElementType> depthsTex;
 
 texture<float, 2, cudaReadModeElementType> depthsTex1;
 
-texture<float4, 2, cudaReadModeElementType> normalsTex;
+// texture<float4, 2, cudaReadModeElementType> normalsTex;
 
 texture<float, 2, cudaReadModeElementType> sliceTex;
 
@@ -210,6 +210,7 @@ __device__ float3 computeDepthPoint_fine(float& pixSize, int depthid, int ndepth
 __global__ void slice_fine_kernel(
     cudaTextureObject_t r4tex,
     cudaTextureObject_t t4tex,
+    cudaTextureObject_t normalsTex,
     float* slice, int slice_p,
     int ndepths, int slicesAtTime,
     int width, int height, int wsh, int t, int npixs,
@@ -221,7 +222,7 @@ __global__ void slice_fine_kernel(
     if((depthid < ndepths) && (pixid < slicesAtTime) && (slicesAtTime * t + pixid < npixs))
     {
         int2 pix = tex2D(pixsTex, pixid, t);
-        float4 normal = tex2D(normalsTex, pixid, t);
+        float4 normal = tex2D<float4>(normalsTex, pixid, t);
         float pixSize;
         float3 p = computeDepthPoint_fine(pixSize, depthid, ndepths, pix, pixid, t);
 
