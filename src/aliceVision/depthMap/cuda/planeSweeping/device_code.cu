@@ -28,8 +28,6 @@ texture<int2, 2, cudaReadModeElementType> pixsTex;
 
 texture<uint2, 2, cudaReadModeElementType> sliceTexUInt2;
 
-texture<unsigned int, 2, cudaReadModeElementType> sliceTexUInt;
-
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 
 __device__ unsigned char computeSigmaOfL( cudaTextureObject_t r4tex, int x, int y, int r)

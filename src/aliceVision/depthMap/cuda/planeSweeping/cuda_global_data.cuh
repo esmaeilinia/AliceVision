@@ -159,14 +159,20 @@ public:
             TexturedPitchedMemFloat2Point;
     typedef TexturedPitchedMem<float,cudaFilterModePoint,cudaReadModeElementType>
             TexturedPitchedMemFloatPoint;
+    typedef TexturedPitchedMem<unsigned int,cudaFilterModePoint,cudaReadModeElementType>
+            TexturedPitchedMemUintPoint;
 
     TexturedPitchedMemUchar4Linear pitched_mem_uchar4_linear_tex_cache;
     TexturedPitchedMemUcharLinear  pitched_mem_uchar_linear_tex_cache;
+
     TexturedPitchedMemUchar4Point  pitched_mem_uchar4_point_tex_cache;
     TexturedPitchedMemUcharPoint   pitched_mem_uchar_point_tex_cache;
+
     TexturedPitchedMemFloat4Point  pitched_mem_float4_point_tex_cache;
     TexturedPitchedMemFloat2Point  pitched_mem_float2_point_tex_cache;
     TexturedPitchedMemFloatPoint   pitched_mem_float_point_tex_cache;
+
+    TexturedPitchedMemUintPoint    pitched_mem_uint_point_tex_cache;
 };
 
 /*

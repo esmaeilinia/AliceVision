@@ -30,8 +30,6 @@ extern texture<int2, 2, cudaReadModeElementType> pixsTex;
 
 extern texture<uint2, 2, cudaReadModeElementType> sliceTexUInt2;
 
-extern texture<unsigned int, 2, cudaReadModeElementType> sliceTexUInt;
-
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 
 __global__ void compute_varLofLABtoW_kernel( cudaTextureObject_t r4tex, uchar4* labMap, int labMap_p, int width, int height, int wsh);

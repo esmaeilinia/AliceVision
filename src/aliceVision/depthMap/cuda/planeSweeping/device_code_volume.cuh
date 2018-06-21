@@ -126,7 +126,9 @@ __global__ void volume_agregateCostVolumeAtZ_kernel(unsigned char* volume, int v
                                                     int volDimZ, int vz, unsigned char P1, unsigned char P2,
                                                     bool transfer);
 
-__global__ void volume_computeBestXSliceUInt_kernel(unsigned int* xsliceBestInColCst, int volDimX, int volDimY);
+__global__ void volume_computeBestXSliceUInt_kernel(
+    cudaTextureObject_t sliceTexUInt,
+    unsigned int* xsliceBestInColCst, int volDimX, int volDimY );
 
 /**
  * @param[inout] xySliceForZ input similarity plane
@@ -228,13 +230,19 @@ __global__ void volume_normalize_rDP1_volume_by_minMaxMap_kernel(int2* xySlice, 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-__global__ void volume_filter_VisTVolume_kernel(unsigned int* ovolume, int ovolume_s, int ovolume_p, int volDimX,
-                                                int volDimY, int volDimZ, int vz, int K);
+__global__ void volume_filter_VisTVolume_kernel(
+    cudaTextureObject_t sliceTexUInt,
+    unsigned int* ovolume, int ovolume_s, int ovolume_p,
+    int volDimX, int volDimY, int volDimZ,
+    int vz, int K );
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-__global__ void volume_filter_enforceTWeightInVolume_kernel(unsigned int* ovolume, int ovolume_s, int ovolume_p,
-                                                            int volDimX, int volDimY, int volDimZ, int vz, int K);
+__global__ void volume_filter_enforceTWeightInVolume_kernel(
+    cudaTextureObject_t sliceTexUInt,
+    unsigned int* ovolume, int ovolume_s, int ovolume_p,
+    int volDimX, int volDimY, int volDimZ,
+    int vz, int K );
 
 } // namespace depthMap
 } // namespace aliceVision

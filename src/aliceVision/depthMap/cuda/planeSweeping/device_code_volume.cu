@@ -205,16 +205,18 @@ __global__ void volume_agregateCostVolumeAtZ_kernel(unsigned char* volume, int v
     }
 }
 
-__global__ void volume_computeBestXSliceUInt_kernel(unsigned int* xsliceBestInColCst, int volDimX, int volDimY)
+__global__ void volume_computeBestXSliceUInt_kernel(
+    cudaTextureObject_t sliceTexUInt,
+    unsigned int* xsliceBestInColCst, int volDimX, int volDimY )
 {
     int vx = blockIdx.x * blockDim.x + threadIdx.x;
 
     if((vx >= 0) && (vx < volDimX))
     {
-        unsigned int bestCst = tex2D(sliceTexUInt, vx, 0);
+        unsigned int bestCst = tex2D<unsigned int>(sliceTexUInt, vx, 0);
         for(int vy = 0; vy < volDimY; vy++)
         {
-            unsigned int cst = tex2D(sliceTexUInt, vx, vy);
+            unsigned int cst = tex2D<unsigned int>(sliceTexUInt, vx, vy);
             bestCst = cst < bestCst ? cst : bestCst;
         }
         xsliceBestInColCst[vx] = bestCst;
@@ -996,8 +998,11 @@ __global__ void volume_normalize_rDP1_volume_by_minMaxMap_kernel(int2* xySlice, 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-__global__ void volume_filter_VisTVolume_kernel(unsigned int* ovolume, int ovolume_s, int ovolume_p, int volDimX,
-                                                int volDimY, int volDimZ, int vz, int K)
+__global__ void volume_filter_VisTVolume_kernel(
+    cudaTextureObject_t sliceTexUInt,
+    unsigned int* ovolume, int ovolume_s, int ovolume_p,
+    int volDimX, int volDimY, int volDimZ,
+    int vz, int K )
 {
     int vx = blockIdx.x * blockDim.x + threadIdx.x;
     int vy = blockIdx.y * blockDim.y + threadIdx.y;
@@ -1012,14 +1017,14 @@ __global__ void volume_filter_VisTVolume_kernel(unsigned int* ovolume, int ovolu
         unsigned int Tval = TvalOld;
         unsigned int Vval = VvalOld;
 
-        // unsigned int bestCst = tex2D(sliceTexUInt,vx,0);
+        // unsigned int bestCst = tex2D<unsigned int>(sliceTexUInt,vx,0);
         // int wsh = abs(K);
         int wsh = 0;
         for(int xp = vx - wsh; xp <= vx + wsh; xp++)
         {
             for(int yp = vy - wsh; yp <= vy + wsh; yp++)
             {
-                unsigned int valN = tex2D(sliceTexUInt, xp, yp);
+                unsigned int valN = tex2D<unsigned int>(sliceTexUInt, xp, yp);
                 unsigned int VvalN = (unsigned int)(valN & 0xFFFF); // visibility
 
                 if(K > 0)
@@ -1040,8 +1045,10 @@ __global__ void volume_filter_VisTVolume_kernel(unsigned int* ovolume, int ovolu
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-__global__ void volume_filter_enforceTWeightInVolume_kernel(unsigned int* ovolume, int ovolume_s, int ovolume_p,
-                                                            int volDimX, int volDimY, int volDimZ, int vz, int K)
+__global__ void volume_filter_enforceTWeightInVolume_kernel(
+    cudaTextureObject_t sliceTexUInt,
+    unsigned int* ovolume, int ovolume_s, int ovolume_p,
+    int volDimX, int volDimY, int volDimZ, int vz, int K)
 {
     int vx = blockIdx.x * blockDim.x + threadIdx.x;
     int vy = blockIdx.y * blockDim.y + threadIdx.y;
@@ -1058,7 +1065,7 @@ __global__ void volume_filter_enforceTWeightInVolume_kernel(unsigned int* ovolum
 
         for(int xp = vx - K; xp <= vx + K; xp++)
         {
-            unsigned int valN = tex2D(sliceTexUInt, xp, vy);
+            unsigned int valN = tex2D<unsigned int>(sliceTexUInt, xp, vy);
             // unsigned int TvalN = (unsigned  int)(valN >> 16); //T - edge
             unsigned int VvalN = (unsigned int)(valN & 0xFFFF); // visibility
             if(xp < vx)
