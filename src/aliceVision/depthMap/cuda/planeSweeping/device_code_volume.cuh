@@ -116,7 +116,9 @@ __global__ void volume_getVolumeXYSliceAtZ_kernel(T1* xySlice, int xySlice_p, T2
     }
 }
 
-__global__ void volume_computeBestXSlice_kernel(unsigned char* xsliceBestInColCst, int volDimX, int volDimY);
+__global__ void volume_computeBestXSlice_kernel( cudaTextureObject_t sliceTexUChar,
+                                                 unsigned char* xsliceBestInColCst,
+                                                 int volDimX, int volDimY );
 
 __global__ void volume_agregateCostVolumeAtZ_kernel(unsigned char* volume, int volume_s, int volume_p,
                                                     unsigned char* xsliceBestInColCst, int volDimX, int volDimY,

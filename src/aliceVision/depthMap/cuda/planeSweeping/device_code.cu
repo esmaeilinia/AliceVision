@@ -36,7 +36,7 @@ texture<float, 2, cudaReadModeElementType> sliceTex;
 
 texture<float2, 2, cudaReadModeElementType> sliceTexFloat2;
 
-texture<unsigned char, 2, cudaReadModeElementType> sliceTexUChar;
+// texture<unsigned char, 2, cudaReadModeElementType> sliceTexUChar;
 
 texture<uint2, 2, cudaReadModeElementType> sliceTexUInt2;
 

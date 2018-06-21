@@ -30,6 +30,7 @@ namespace depthMap {
 
 // Macro for checking cuda errors
 #define CHECK_CUDA_ERROR()                                                    \
+    cudaDeviceSynchronize();                                                  \
     if(cudaError_t err = cudaGetLastError())                                  \
                                                                               \
 {                                                                             \
@@ -232,8 +233,8 @@ void ps_deviceAllocate( int ncams, int width, int height, int scales,
     sliceTex.normalized = false;
     sliceTexFloat2.filterMode = cudaFilterModePoint;
     sliceTexFloat2.normalized = false;
-    sliceTexUChar.filterMode = cudaFilterModePoint;
-    sliceTexUChar.normalized = false;
+    // sliceTexUChar.filterMode = cudaFilterModePoint;
+    // sliceTexUChar.normalized = false;
     sliceTexUInt2.filterMode = cudaFilterModePoint;
     sliceTexUInt2.normalized = false;
     sliceTexUInt.filterMode = cudaFilterModePoint;
@@ -487,35 +488,31 @@ void ps_aggregatePathVolume2(CudaDeviceMemoryPitched<unsigned char, 3>& vol_dmp,
     dim3 gridvolrow(divUp(volDimX, block_sizenmxs), 1, 1);
     dim3 gridvolrowAllCols(divUp(volDimX, block_sizenmxs), volDimY, 1);
 
-    CudaDeviceMemoryPitched<unsigned char, 2> xyslice_dmp(CudaSize<2>(volDimX, volDimY));
-    CudaArray<unsigned char, 2> xyslice_arr(CudaSize<2>(volDimX, volDimY));
+    auto xyslice_dmp = global_data.pitched_mem_uchar_point_tex_cache.get( volDimX, volDimY );
+
     CudaDeviceMemoryPitched<unsigned char, 2> xsliceBestInColSim_dmp(CudaSize<2>(volDimX, 1));
-    // CudaDeviceMemoryPitched<int,2>    xsliceBestInColRow_dmp(CudaSize<2>(volDimX, 1));
 
     for(int z = 0; z < volDimZ; z++)
     {
         volume_agregateCostVolumeAtZ_kernel<<<gridvolrowAllCols, blockvolrow>>>(
             vol_dmp.getBuffer(), vol_dmp.stride()[1], vol_dmp.stride()[0], xsliceBestInColSim_dmp.getBuffer(), volDimX,
             volDimY, volDimZ, z, P1, P2, transfer);
-        cudaThreadSynchronize();
         CHECK_CUDA_ERROR();
 
         volume_getVolumeXYSliceAtZ_kernel<unsigned char, unsigned char><<<gridvol, blockvol>>>(
-            xyslice_dmp.getBuffer(), xyslice_dmp.stride()[0], vol_dmp.getBuffer(), vol_dmp.stride()[1], vol_dmp.stride()[0],
+            xyslice_dmp->mem->getBuffer(), xyslice_dmp->mem->stride()[0], vol_dmp.getBuffer(), vol_dmp.stride()[1], vol_dmp.stride()[0],
             volDimX, volDimY, volDimZ, z);
-        cudaThreadSynchronize();
         CHECK_CUDA_ERROR();
-        copy((xyslice_arr), xyslice_dmp);
-        cudaBindTextureToArray(sliceTexUChar, xyslice_arr.getArray(), cudaCreateChannelDesc<unsigned char>());
+
         volume_computeBestXSlice_kernel<<<gridvolrow, blockvolrow>>>(
+            xyslice_dmp->tex,
             xsliceBestInColSim_dmp.getBuffer(),
             volDimX, volDimY);
-        cudaThreadSynchronize();
         CHECK_CUDA_ERROR();
-        cudaUnbindTexture(sliceTexUChar);
     }
 
     // pr_printfDeviceMemoryInfo();
+    global_data.pitched_mem_uchar_point_tex_cache.put( xyslice_dmp );
 }
 
 /**
@@ -552,13 +549,11 @@ void ps_aggregatePathVolume(
     volume_getVolumeXYSliceAtZ_kernel<unsigned int, unsigned char><<<gridvol, blockvol>>>(
         d_xySliceForZ.getBuffer(), d_xySliceForZ.stride()[0], d_volSimT.getBuffer(), d_volSimT.stride()[1],
         d_volSimT.stride()[0], volDimX, volDimY, volDimZ, 0); // Z=0
-    cudaThreadSynchronize();
     CHECK_CUDA_ERROR();
 
     // Set the first Z plane from 'd_volSimT' to 255
     volume_initVolume_kernel<unsigned char><<<gridvol, blockvol>>>(
         d_volSimT.getBuffer(), d_volSimT.stride()[1], d_volSimT.stride()[0], volDimX, volDimY, volDimZ, 0, 255);
-    cudaThreadSynchronize();
     CHECK_CUDA_ERROR();
 
     for(int z = 1; z < volDimZ; z++)
@@ -572,7 +567,6 @@ void ps_aggregatePathVolume(
         volume_computeBestXSliceUInt_kernel<<<gridvolrow, blockvolrow>>>(
             d_xSliceBestInColSimForZM1.getBuffer(),
             volDimX, volDimY);
-        cudaThreadSynchronize();
         CHECK_CUDA_ERROR();
         cudaUnbindTexture(sliceTexUInt);
 
@@ -581,7 +575,6 @@ void ps_aggregatePathVolume(
             d_xySliceForZ.getBuffer(), d_xySliceForZ.stride()[0],
             d_volSimT.getBuffer(), d_volSimT.stride()[1], d_volSimT.stride()[0],
             volDimX, volDimY, volDimZ, z);
-        cudaThreadSynchronize();
         CHECK_CUDA_ERROR();
 
         volume_agregateCostVolumeAtZinSlices_kernel<<<gridvolrowAllCols, blockvolrow>>>(
@@ -593,7 +586,6 @@ void ps_aggregatePathVolume(
             volDimX, volDimY, volDimZ,
             z, P1, P2, transfer, volLUX,
             volLUY, dimTrnX, doInvZ);
-        cudaThreadSynchronize();
         CHECK_CUDA_ERROR();
     }
 
@@ -655,7 +647,6 @@ void ps_updateAggrVolume(
             dimTrnX, dimTrnY, dimTrnZ,
             z);
     }
-    cudaThreadSynchronize();
     CHECK_CUDA_ERROR();
     // if (verbose) printf("transpose volume gpu elapsed time: %f ms \n", toc(tall));
     // pr_printfDeviceMemoryInfo();
@@ -670,7 +661,6 @@ void ps_updateAggrVolume(
                 volDims[dimsTrn[0]], volDims[dimsTrn[1]], volDims[dimsTrn[2]],
                 z);
         }
-        cudaThreadSynchronize();
         CHECK_CUDA_ERROR();
         // if (verbose) printf("shift z volume gpu elapsed time: %f ms \n", toc(tall));
     }
@@ -694,7 +684,6 @@ void ps_updateAggrVolume(
                 d_volSimT.getBuffer(), d_volSimT.stride()[1], d_volSimT.stride()[0], volDims[dimsTrn[0]],
                 volDims[dimsTrn[1]], volDims[dimsTrn[2]], z);
         }
-        cudaThreadSynchronize();
         CHECK_CUDA_ERROR();
         // if (verbose) printf("shift z volume gpu elapsed time: %f ms \n", toc(tall));
     }
@@ -708,7 +697,6 @@ void ps_updateAggrVolume(
             volDims[dimsTrn[0]], volDims[dimsTrn[1]], volDims[dimsTrn[2]],
             dimsTri[0], dimsTri[1], dimsTri[2], zT, lastN);
     }
-    cudaThreadSynchronize();
     CHECK_CUDA_ERROR();
     // if (verbose) printf("transpose volume gpu elapsed time: %f ms \n", toc(tall));
     // pr_printfDeviceMemoryInfo();
@@ -828,7 +816,6 @@ void ps_transposeVolume(CudaHostMemoryHeap<unsigned char, 3>* ovol_hmh,
                                                        volTra_dmp.stride()[0], volSim_dmp.getBuffer(),
                                                        volSim_dmp.stride()[1], volSim_dmp.stride()[0], volDimX,
                                                        volDimY, volDimZ, dimTrnX, dimTrnY, dimTrnZ, z);
-        cudaThreadSynchronize();
         CHECK_CUDA_ERROR();
     }
 
@@ -881,7 +868,7 @@ void ps_computeSimilarityVolume(
     {
         volume_initVolume_kernel<unsigned char><<<gridvol, blockvol>>>(
             vol_dmp.getBuffer(), vol_dmp.stride()[1], vol_dmp.stride()[0], volDimX, volDimY, volDimZ, z, 255);
-        cudaThreadSynchronize();
+        CHECK_CUDA_ERROR();
     }
 
     //--------------------------------------------------------------------------------------------------
@@ -894,13 +881,13 @@ void ps_computeSimilarityVolume(
             t4tex,
             slice_dmp.getBuffer(), slice_dmp.stride()[0], nDepthsToSearch, nDepths,
             slicesAtTime, width, height, wsh, t, npixs, gammaC, gammaP, epipShift);
-        cudaThreadSynchronize();
 
-        volume_saveSliceToVolume_kernel<<<grid, block>>>(vol_dmp.getBuffer(), vol_dmp.stride()[1], vol_dmp.stride()[0],
-                                                         slice_dmp.getBuffer(), slice_dmp.stride()[0], nDepthsToSearch,
-                                                         nDepths, slicesAtTime, width, height, t, npixs, volStepXY,
-                                                         volDimX, volDimY, volDimZ, volLUX, volLUY, volLUZ);
-        cudaThreadSynchronize();
+        volume_saveSliceToVolume_kernel<<<grid, block>>>(
+            vol_dmp.getBuffer(), vol_dmp.stride()[1], vol_dmp.stride()[0],
+            slice_dmp.getBuffer(), slice_dmp.stride()[0],
+            nDepthsToSearch, nDepths,
+            slicesAtTime, width, height, t, npixs, volStepXY,
+            volDimX, volDimY, volDimZ, volLUX, volLUY, volLUZ);
         CHECK_CUDA_ERROR();
     }
 
@@ -985,7 +972,6 @@ void ps_filterVisTVolume(CudaHostMemoryHeap<unsigned int, 3>* iovol_hmh, int vol
                 volume_getVolumeXYSliceAtZ_kernel<unsigned int, unsigned int><<<gridvol, blockvol>>>(
                     xyslice_dmp.getBuffer(), xyslice_dmp.stride()[0], ivol_dmp.getBuffer(), ivol_dmp.stride()[1],
                     ivol_dmp.stride()[0], volDimX, volDimY, volDimZ, z + K);
-                cudaThreadSynchronize();
 
                 copy((xyslice_arr), xyslice_dmp);
                 cudaBindTextureToArray(sliceTexUInt, xyslice_arr.getArray(), cudaCreateChannelDesc<unsigned int>());

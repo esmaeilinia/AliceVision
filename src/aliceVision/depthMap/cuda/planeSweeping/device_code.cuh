@@ -38,7 +38,7 @@ extern texture<float, 2, cudaReadModeElementType> sliceTex;
 
 extern texture<float2, 2, cudaReadModeElementType> sliceTexFloat2;
 
-extern texture<unsigned char, 2, cudaReadModeElementType> sliceTexUChar;
+// extern texture<unsigned char, 2, cudaReadModeElementType> sliceTexUChar;
 
 extern texture<uint2, 2, cudaReadModeElementType> sliceTexUInt2;
 
