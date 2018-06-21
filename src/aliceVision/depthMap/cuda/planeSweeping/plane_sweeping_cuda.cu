@@ -28,20 +28,6 @@
 namespace aliceVision {
 namespace depthMap {
 
-// Macro for checking cuda errors
-#define CHECK_CUDA_ERROR()                                                    \
-    cudaDeviceSynchronize();                                                  \
-    if(cudaError_t err = cudaGetLastError())                                  \
-                                                                              \
-{                                                                             \
-        fprintf(stderr, "\n\nCUDAError: %s\n", cudaGetErrorString(err));      \
-        fprintf(stderr, "  file:       %s\n", __FILE__);                      \
-        fprintf(stderr, "  function:   %s\n", __FUNCTION__);                  \
-        fprintf(stderr, "  line:       %d\n\n", __LINE__);                    \
-                                                                              \
-}
-
-
 __host__ float3 ps_M3x3mulV3(float* M3x3, const float3& V)
 {
     return make_float3(M3x3[0] * V.x + M3x3[3] * V.y + M3x3[6] * V.z, M3x3[1] * V.x + M3x3[4] * V.y + M3x3[7] * V.z,
@@ -223,18 +209,16 @@ void ps_deviceAllocate( int ncams, int width, int height, int scales,
     volPixsTex.normalized = false;
     pixsTex.filterMode = cudaFilterModePoint;
     pixsTex.normalized = false;
-    gradTex.filterMode = cudaFilterModePoint;
-    gradTex.normalized = false;
+    // gradTex.filterMode = cudaFilterModePoint;
+    // gradTex.normalized = false;
     depthsTex.filterMode = cudaFilterModePoint;
     depthsTex.normalized = false;
     depthsTex1.filterMode = cudaFilterModePoint;
     depthsTex1.normalized = false;
     sliceTex.filterMode = cudaFilterModePoint;
     sliceTex.normalized = false;
-    sliceTexFloat2.filterMode = cudaFilterModePoint;
-    sliceTexFloat2.normalized = false;
-    // sliceTexUChar.filterMode = cudaFilterModePoint;
-    // sliceTexUChar.normalized = false;
+    // sliceTexFloat2.filterMode = cudaFilterModePoint;
+    // sliceTexFloat2.normalized = false;
     sliceTexUInt2.filterMode = cudaFilterModePoint;
     sliceTexUInt2.normalized = false;
     sliceTexUInt.filterMode = cudaFilterModePoint;
@@ -1219,8 +1203,11 @@ void ps_computeRcVolumeForTcDepthSimMaps(CudaHostMemoryHeap<unsigned int, 3>** o
             ps_init_target_camera_matrices(cams[c]->P, cams[c]->iP, cams[c]->R, cams[c]->iR, cams[c]->K, cams[c]->iK,
                                            cams[c]->C);
 
-            CudaArray<float2, 2> tcDepthSimMap_arr(*rcTcsDepthSimMaps_hmh[c]);
-            cudaBindTextureToArray(sliceTexFloat2, tcDepthSimMap_arr.getArray(), cudaCreateChannelDesc<float2>());
+            auto tcDepthSimMap_dmp = global_data.pitched_mem_float2_point_tex_cache.get(
+                rcTcsDepthSimMaps_hmh[c]->getSize()[0],
+                rcTcsDepthSimMaps_hmh[c]->getSize()[1] );
+            copy( *tcDepthSimMap_dmp->mem, *rcTcsDepthSimMaps_hmh[c] );
+            cudaTextureObject_t sliceTexFloat2 = tcDepthSimMap_dmp->tex;
 
             //--------------------------------------------------------------------------------------------------
             // update volume
@@ -1235,12 +1222,14 @@ void ps_computeRcVolumeForTcDepthSimMaps(CudaHostMemoryHeap<unsigned int, 3>** o
                 float2 tcMinMaxFpDepth = camsMinMaxFpDepths[c];
 
                 volume_updateRcVolumeForTcDepthMap_kernel<<<gridvol, blockvol>>>(
-                    vol_dmp.getBuffer(), vol_dmp.stride()[1], vol_dmp.stride()[0], volDimX, volDimY, volDimZpart, z,
+                    sliceTexFloat2,
+                    vol_dmp.getBuffer(), vol_dmp.stride()[1], vol_dmp.stride()[0],
+                    volDimX, volDimY, volDimZpart, z,
                     volStepXY, volStepXY, width, height, fpPlaneDepth, stepInDepth, zPart, volDimZ,
                     maxTcRcPixSizeInVoxRatio, considerNegativeDepthAsInfinity, tcMinMaxFpDepth, true);
             }
-            cudaThreadSynchronize();
-            cudaUnbindTexture(sliceTexFloat2);
+
+            global_data.pitched_mem_float2_point_tex_cache.put( tcDepthSimMap_dmp );
         }
 
         if(verbose)

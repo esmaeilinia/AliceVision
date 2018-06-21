@@ -146,23 +146,29 @@ __global__ void volume_agregateCostVolumeAtZinSlices_kernel(
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-__global__ void volume_updateRcVolumeForTcDepthMap_kernel(unsigned int* volume, int volume_s, int volume_p,
-                                                          const int volDimX, const int volDimY, const int volDimZ,
-                                                          const int vz, const int volStepXY, const int tcDepthMapStep,
-                                                          const int width, const int height, const float fpPlaneDepth,
-                                                          const float stepInDepth, const int zPart,
-                                                          const int vilDimZGlob, const float maxTcRcPixSizeInVoxRatio,
-                                                          const bool considerNegativeDepthAsInfinity,
-                                                          const float2 tcMinMaxFpDepth, const bool useSimilarity);
+__global__ void volume_updateRcVolumeForTcDepthMap_kernel(
+    cudaTextureObject_t sliceTexFloat2,
+    unsigned int* volume, int volume_s, int volume_p,
+    const int volDimX, const int volDimY, const int volDimZ,
+    const int vz, const int volStepXY, const int tcDepthMapStep,
+    const int width, const int height, const float fpPlaneDepth,
+    const float stepInDepth, const int zPart,
+    const int vilDimZGlob, const float maxTcRcPixSizeInVoxRatio,
+    const bool considerNegativeDepthAsInfinity,
+    const float2 tcMinMaxFpDepth, const bool useSimilarity );
 
-__global__ void volume_updateRcVolumeForTcDepthMap2_kernel(unsigned int* volume, int volume_s, int volume_p,
-                                                           const int volDimX, const int volDimY, const int volDimZ,
-                                                           const int vz, const int volStepXY, const int tcDepthMapStep,
-                                                           const int width, const int height, const float fpPlaneDepth,
-                                                           const float stepInDepth, const int zPart,
-                                                           const int vilDimZGlob, const float maxTcRcPixSizeInVoxRatio,
-                                                           const bool considerNegativeDepthAsInfinity,
-                                                           const float2 tcMinMaxFpDepth, const bool useSimilarity);
+#if 0
+__global__ void volume_updateRcVolumeForTcDepthMap2_kernel(
+    cudaTextureObject_t sliceTexFloat2,
+    unsigned int* volume, int volume_s, int volume_p,
+    const int volDimX, const int volDimY, const int volDimZ,
+    const int vz, const int volStepXY, const int tcDepthMapStep,
+    const int width, const int height, const float fpPlaneDepth,
+    const float stepInDepth, const int zPart,
+    const int vilDimZGlob, const float maxTcRcPixSizeInVoxRatio,
+    const bool considerNegativeDepthAsInfinity,
+    const float2 tcMinMaxFpDepth, const bool useSimilarity );
+#endif
 
 __global__ void volume_update_nModalsMap_kernel(unsigned short* nModalsMap, int nModalsMap_p,
                                                 unsigned short* rcIdDepthMap, int rcIdDepthMap_p, int volDimX,

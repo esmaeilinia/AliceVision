@@ -34,8 +34,6 @@ namespace depthMap {
  */
 GlobalData global_data;
 
-// texture<float, cudaTextureType1D, cudaReadModeElementType> gaussianTex;
-
 void GaussianArray::create( float delta, int radius )
 {
     std::cerr << "Computing Gaussian table for radius " << radius << " and delta " << delta << std::endl;
@@ -120,8 +118,6 @@ void GlobalData::allocScaledPictureArrays( int scales, int ncams, int width, int
     tex_desc.addressMode[0]   = cudaAddressModeClamp;
     tex_desc.addressMode[1]   = cudaAddressModeClamp;
     tex_desc.addressMode[2]   = cudaAddressModeClamp;
-    // tex_desc.readMode         = cudaReadModeNormalizedFloat;
-    // tex_desc.filterMode       = cudaFilterModeLinear;
 
     for( int c=0; c<ncams; c++ )
     {

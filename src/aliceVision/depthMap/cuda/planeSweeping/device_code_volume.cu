@@ -284,14 +284,16 @@ __global__ void volume_agregateCostVolumeAtZinSlices_kernel(
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-__global__ void volume_updateRcVolumeForTcDepthMap_kernel(unsigned int* volume, int volume_s, int volume_p,
-                                                          const int volDimX, const int volDimY, const int volDimZ,
-                                                          const int vz, const int volStepXY, const int tcDepthMapStep,
-                                                          const int width, const int height, const float fpPlaneDepth,
-                                                          const float stepInDepth, const int zPart,
-                                                          const int vilDimZGlob, const float maxTcRcPixSizeInVoxRatio,
-                                                          const bool considerNegativeDepthAsInfinity,
-                                                          const float2 tcMinMaxFpDepth, const bool useSimilarity)
+__global__ void volume_updateRcVolumeForTcDepthMap_kernel(
+    cudaTextureObject_t sliceTexFloat2,
+    unsigned int* volume, int volume_s, int volume_p,
+    const int volDimX, const int volDimY, const int volDimZ,
+    const int vz, const int volStepXY, const int tcDepthMapStep,
+    const int width, const int height, const float fpPlaneDepth,
+    const float stepInDepth, const int zPart,
+    const int vilDimZGlob, const float maxTcRcPixSizeInVoxRatio,
+    const bool considerNegativeDepthAsInfinity,
+    const float2 tcMinMaxFpDepth, const bool useSimilarity)
 {
     int vx = blockIdx.x * blockDim.x + threadIdx.x;
     int vy = blockIdx.y * blockDim.y + threadIdx.y;
@@ -325,7 +327,7 @@ __global__ void volume_updateRcVolumeForTcDepthMap_kernel(unsigned int* volume, 
             }
             else
             {
-                float2 depthSimTc = tex2D(sliceTexFloat2, tpixMap.x, tpixMap.y);
+                float2 depthSimTc = tex2D<float2>(sliceTexFloat2, tpixMap.x, tpixMap.y);
                 depthTc = depthSimTc.x;
                 // simWeightTc = sigmoid(0.1f,1.0f,1.0f,-0.5f,depthSimTc.y);
                 simWeightTc = depthSimTc.y;
@@ -371,14 +373,17 @@ __global__ void volume_updateRcVolumeForTcDepthMap_kernel(unsigned int* volume, 
     }
 }
 
-__global__ void volume_updateRcVolumeForTcDepthMap2_kernel(unsigned int* volume, int volume_s, int volume_p,
-                                                           const int volDimX, const int volDimY, const int volDimZ,
-                                                           const int vz, const int volStepXY, const int tcDepthMapStep,
-                                                           const int width, const int height, const float fpPlaneDepth,
-                                                           const float stepInDepth, const int zPart,
-                                                           const int vilDimZGlob, const float maxTcRcPixSizeInVoxRatio,
-                                                           const bool considerNegativeDepthAsInfinity,
-                                                           const float2 tcMinMaxFpDepth, const bool useSimilarity)
+#if 0
+__global__ void volume_updateRcVolumeForTcDepthMap2_kernel(
+    cudaTextureObject_t sliceTexFloat2,
+    unsigned int* volume, int volume_s, int volume_p,
+    const int volDimX, const int volDimY, const int volDimZ,
+    const int vz, const int volStepXY, const int tcDepthMapStep,
+    const int width, const int height, const float fpPlaneDepth,
+    const float stepInDepth, const int zPart,
+    const int vilDimZGlob, const float maxTcRcPixSizeInVoxRatio,
+    const bool considerNegativeDepthAsInfinity,
+    const float2 tcMinMaxFpDepth, const bool useSimilarity )
 {
     int vx = blockIdx.x * blockDim.x + threadIdx.x;
     int vy = blockIdx.y * blockDim.y + threadIdx.y;
@@ -419,7 +424,7 @@ __global__ void volume_updateRcVolumeForTcDepthMap2_kernel(unsigned int* volume,
                 }
                 else
                 {
-                    float2 depthSimTc = tex2D(sliceTexFloat2, tpixMapAct.x, tpixMapAct.y);
+                    float2 depthSimTc = tex2D<float2>(sliceTexFloat2, tpixMapAct.x, tpixMapAct.y);
                     depthTc = depthSimTc.x;
                     // simWeightTc = sigmoid(0.1f,1.0f,1.0f,-0.5f,depthSimTc.y);
                     simWeightTc = depthSimTc.y;
@@ -472,6 +477,7 @@ __global__ void volume_updateRcVolumeForTcDepthMap2_kernel(unsigned int* volume,
         *volume_zyx = val;
     }
 }
+#endif
 
 __global__ void volume_update_nModalsMap_kernel(unsigned short* nModalsMap, int nModalsMap_p,
                                                 unsigned short* rcIdDepthMap, int rcIdDepthMap_p, int volDimX,

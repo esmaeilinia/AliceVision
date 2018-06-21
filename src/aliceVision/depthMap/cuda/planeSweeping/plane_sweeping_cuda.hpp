@@ -12,6 +12,7 @@ namespace depthMap {
 
 // Macro for checking cuda errors
 #define CHECK_CUDA_ERROR()                                                    \
+    cudaDeviceSynchronize();                                                  \
     if(cudaError_t err = cudaGetLastError())                                  \
                                                                               \
 {                                                                             \

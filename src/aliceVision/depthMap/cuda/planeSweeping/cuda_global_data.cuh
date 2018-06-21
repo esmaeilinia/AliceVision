@@ -45,7 +45,7 @@ struct PitchedMem_Texture
         tex_desc.addressMode[0]   = cudaAddressModeClamp;
         tex_desc.addressMode[1]   = cudaAddressModeClamp;
         tex_desc.addressMode[2]   = cudaAddressModeClamp;
-        tex_desc.readMode         = rMode; // cudaReadModeNormalizedFloat;
+        tex_desc.readMode         = rMode;
         tex_desc.filterMode       = fMode;
 
         cudaResourceDesc res_desc;
@@ -155,12 +155,15 @@ public:
             TexturedPitchedMemUcharPoint;
     typedef TexturedPitchedMem<float4,cudaFilterModePoint,cudaReadModeElementType>
             TexturedPitchedMemFloat4Point;
+    typedef TexturedPitchedMem<float2,cudaFilterModePoint,cudaReadModeElementType>
+            TexturedPitchedMemFloat2Point;
 
     TexturedPitchedMemUchar4Linear pitched_mem_uchar4_linear_tex_cache;
     TexturedPitchedMemUcharLinear  pitched_mem_uchar_linear_tex_cache;
     TexturedPitchedMemUchar4Point  pitched_mem_uchar4_point_tex_cache;
     TexturedPitchedMemUcharPoint   pitched_mem_uchar_point_tex_cache;
     TexturedPitchedMemFloat4Point  pitched_mem_float4_point_tex_cache;
+    TexturedPitchedMemFloat2Point  pitched_mem_float2_point_tex_cache;
 };
 
 /*

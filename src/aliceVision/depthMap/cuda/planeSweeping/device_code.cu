@@ -26,17 +26,11 @@ texture<int4, 2, cudaReadModeElementType> volPixsTex;
 
 texture<int2, 2, cudaReadModeElementType> pixsTex;
 
-texture<float2, 2, cudaReadModeElementType> gradTex;
-
 texture<float, 2, cudaReadModeElementType> depthsTex;
 
 texture<float, 2, cudaReadModeElementType> depthsTex1;
 
 texture<float, 2, cudaReadModeElementType> sliceTex;
-
-texture<float2, 2, cudaReadModeElementType> sliceTexFloat2;
-
-// texture<unsigned char, 2, cudaReadModeElementType> sliceTexUChar;
 
 texture<uint2, 2, cudaReadModeElementType> sliceTexUInt2;
 
