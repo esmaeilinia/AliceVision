@@ -15,6 +15,7 @@ namespace depthMap {
 __global__ void volume_slice_kernel(
     cudaTextureObject_t r4tex,
     cudaTextureObject_t t4tex,
+    cudaTextureObject_t depthsTex,
     unsigned char* slice, int slice_p,
     // float3* slicePts, int slicePts_p,
     int nsearchdepths, int ndepths, int slicesAtTime, int width, int height, int wsh,
@@ -175,12 +176,16 @@ __global__ void volume_update_nModalsMap_kernel_id0(
     int volDimX, int volDimY );
 
 __global__ void volume_update_nModalsMap_kernel(
+    cudaTextureObject_t depthsTex,
+    cudaTextureObject_t sliceTex,
     unsigned short* nModalsMap, int nModalsMap_p,
     unsigned short* rcIdDepthMap, int rcIdDepthMap_p, int volDimX,
     int volDimY, int volDimZ, int volStepXY, int tcDepthMapStep, int width,
     int height, int distLimit, int id );
 
 __global__ void volume_filterRcIdDepthMapByTcDepthMap_kernel(
+    cudaTextureObject_t depthsTex,
+    cudaTextureObject_t sliceTex,
     unsigned short* rcIdDepthMap, int rcIdDepthMap_p,
     int volDimX, int volDimY, int volDimZ, int volStepXY,
     int tcDepthMapStep, int width, int height, int distLimit );

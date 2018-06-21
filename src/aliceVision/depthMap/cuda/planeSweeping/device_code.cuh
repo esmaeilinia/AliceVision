@@ -28,11 +28,11 @@ extern texture<int4, 2, cudaReadModeElementType> volPixsTex;
 
 extern texture<int2, 2, cudaReadModeElementType> pixsTex;
 
-extern texture<float, 2, cudaReadModeElementType> depthsTex;
+// extern texture<float, 2, cudaReadModeElementType> depthsTex;
 
-extern texture<float, 2, cudaReadModeElementType> depthsTex1;
+// extern texture<float, 2, cudaReadModeElementType> depthsTex1;
 
-extern texture<float, 2, cudaReadModeElementType> sliceTex;
+// extern texture<float, 2, cudaReadModeElementType> sliceTex;
 
 extern texture<uint2, 2, cudaReadModeElementType> sliceTexUInt2;
 
@@ -93,6 +93,7 @@ static __device__ float move3DPointByTcOrRcPixStep(float3& p, float pixStep, boo
 __global__ void slice_kernel(
     cudaTextureObject_t r4tex,
     cudaTextureObject_t t4tex,
+    cudaTextureObject_t depthsTex,
     float* slice, int slice_p,
     // float3* slicePts, int slicePts_p,
     int ndepths, int slicesAtTime,
@@ -105,6 +106,7 @@ __global__ void slice_fine_kernel(
     cudaTextureObject_t r4tex,
     cudaTextureObject_t t4tex,
     cudaTextureObject_t normalsTex,
+    cudaTextureObject_t depthtsTex,
     float* slice, int slice_p,
     int ndepths, int slicesAtTime,
     int width, int height, int wsh, int t, int npixs,
@@ -112,31 +114,39 @@ __global__ void slice_fine_kernel(
 
 __global__ void smoothDepthMap_kernel(
     cudaTextureObject_t r4tex,
+    cudaTextureObject_t depthsTex,
     float* dmap, int dmap_p,
     int width, int height, int wsh, const float gammaC, const float gammaP);
 
 __global__ void filterDepthMap_kernel(
     cudaTextureObject_t r4tex,
+    cudaTextureObject_t depthsTex,
     float* dmap, int dmap_p,
     int width, int height, int wsh, const float gammaC, const float minCostThr );
 
 __global__ void alignSourceDepthMapToTarget_kernel(
     cudaTextureObject_t r4tex,
+    cudaTextureObject_t depthsTex,
+    cudaTextureObject_t depthsTex1,
     float* dmap, int dmap_p,
     int width, int height, int wsh, const float gammaC, const float maxPixelSizeDist );
 
 __global__ void computeNormalMap_kernel(
     cudaTextureObject_t r4tex,
+    cudaTextureObject_t depthsTex,
     float3* nmap, int nmap_p,
     int width, int height, int wsh, const float gammaC, const float gammaP );
 
 __global__ void locmin_kernel(
+    cudaTextureObject_t sliceTex,
     float* slice, int slice_p, int ndepths, int slicesAtTime,
     int width, int height, int wsh, int t, int npixs,
     int maxDepth,
     bool doUsePixelsDepths, int kernelSizeHalf );
 
 __global__ void getBest_kernel(
+    cudaTextureObject_t depthsTex,
+    cudaTextureObject_t sliceTex,
     float* slice, int slice_p,
     // int* bestDptId, int bestDptId_p,
     float* bestDpt, int bestDpt_p,
@@ -146,6 +156,8 @@ __global__ void getBest_kernel(
     bool subPixel );
 
 __global__ void getBest_fine_kernel(
+    cudaTextureObject_t depthsTex,
+    cudaTextureObject_t sliceTex,
     float* slice, int slice_p,
     // int* bestDptId, int bestDptId_p,
     float* bestDpt, int bestDpt_p,
@@ -205,6 +217,7 @@ __global__ void compWshNccSim_kernel(
 __global__ void aggrYKNCCSim_kernel(
     cudaTextureObject_t rTexU4,
     cudaTextureObject_t tTexU4,
+    cudaTextureObject_t sliceTex,
     float* osim, int osim_p,
     int width, int height, int wsh, int step,
     const float gammaC, const float gammaP );
@@ -234,6 +247,7 @@ __global__ void downscale_mean_smooth_lab_kernel(
 
 __global__ void ptsStatForRcDepthMap_kernel(
     cudaTextureObject_t r4tex,
+    cudaTextureObject_t depthsTex,
     float2* out, int out_p,
     float3* pts, int pts_p,
     int npts, int width, int height,

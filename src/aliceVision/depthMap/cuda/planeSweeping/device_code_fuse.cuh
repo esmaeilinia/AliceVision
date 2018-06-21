@@ -34,6 +34,7 @@ __global__ void fuse_getOptDeptMapFromOPtDepthSimMap_kernel(
 
 __global__ void fuse_optimizeDepthSimMap_kernel(
                     cudaTextureObject_t r4tex,
+                    cudaTextureObject_t depthsTex,
                     float2* out_optDepthSimMap, int optDepthSimMap_p,
                     float2* midDepthPixSizeMap, int midDepthPixSizeMap_p,
                     float2* fusedDepthSimMap, int fusedDepthSimMap_p, int width, int height,

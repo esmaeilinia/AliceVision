@@ -16,12 +16,12 @@
 namespace aliceVision {
 namespace depthMap {
 
-__device__ void volume_computePatch(patch& ptch, int depthid, int2& pix)
+static __device__ void volume_computePatch( cudaTextureObject_t depthsTex, patch& ptch, int depthid, int2& pix)
 {
     float3 p;
     float pixSize;
 
-    float fpPlaneDepth = tex2D(depthsTex, depthid, 0);
+    float fpPlaneDepth = tex2D<float>(depthsTex, depthid, 0);
     p = get3DPointForPixelAndFrontoParellePlaneRC(pix, fpPlaneDepth);
     pixSize = computePixSize(p);
 
@@ -33,6 +33,7 @@ __device__ void volume_computePatch(patch& ptch, int depthid, int2& pix)
 __global__ void volume_slice_kernel(
     cudaTextureObject_t r4tex,
     cudaTextureObject_t t4tex,
+    cudaTextureObject_t depthsTex,
     unsigned char* slice, int slice_p,
     // float3* slicePts, int slicePts_p,
     int nsearchdepths, int ndepths, int slicesAtTime, int width, int height, int wsh,
@@ -50,7 +51,7 @@ __global__ void volume_slice_kernel(
         if(depthid < ndepths)
         {
             patch ptcho;
-            volume_computePatch(ptcho, depthid, pix);
+            volume_computePatch( depthsTex, ptcho, depthid, pix);
 
             float fsim = compNCCby3DptsYK( r4tex, t4tex, ptcho, wsh, width, height, gammaC, gammaP, epipShift);
             // unsigned char sim = (unsigned char)(((fsim+1.0f)/2.0f)*255.0f);
@@ -481,6 +482,8 @@ __global__ void volume_update_nModalsMap_kernel_id0(
 }
 
 __global__ void volume_update_nModalsMap_kernel(
+    cudaTextureObject_t depthsTex,
+    cudaTextureObject_t sliceTex,
     unsigned short* nModalsMap, int nModalsMap_p,
     unsigned short* rcIdDepthMap, int rcIdDepthMap_p, int volDimX,
     int volDimY, int volDimZ, int volStepXY, int tcDepthMapStep, int width,
@@ -502,8 +505,8 @@ __global__ void volume_update_nModalsMap_kernel(
 
             if(vz > 0)
             {
-                float fpPlaneDepth = tex2D(depthsTex, vz, 0);
-                float fpPlaneDepthP = tex2D(depthsTex, vz - 1, 0);
+                float fpPlaneDepth  = tex2D<float>(depthsTex, vz, 0);
+                float fpPlaneDepthP = tex2D<float>(depthsTex, vz - 1, 0);
                 float step = fabsf(fpPlaneDepthP - fpPlaneDepth);
 
                 float3 p = get3DPointForPixelAndFrontoParellePlaneRC(pix, fpPlaneDepth);
@@ -511,7 +514,7 @@ __global__ void volume_update_nModalsMap_kernel(
                 getPixelFor3DPointTC(tpixf, p);
                 int2 tpix = make_int2((int)(tpixf.x + 0.5f), (int)(tpixf.y + 0.5f));
 
-                float depthTc = tex2D(sliceTex, tpix.x / tcDepthMapStep, tpix.y / tcDepthMapStep);
+                float depthTc = tex2D<float>(sliceTex, tpix.x / tcDepthMapStep, tpix.y / tcDepthMapStep);
                 float depthTcP = size(sg_s_tC - p);
                 int distid = (int)(fabsf(depthTc - depthTcP) / step + 0.5f);
 
@@ -526,6 +529,8 @@ __global__ void volume_update_nModalsMap_kernel(
 }
 
 __global__ void volume_filterRcIdDepthMapByTcDepthMap_kernel(
+    cudaTextureObject_t depthsTex,
+    cudaTextureObject_t sliceTex,
     unsigned short* rcIdDepthMap, int rcIdDepthMap_p,
     int volDimX, int volDimY, int volDimZ, int volStepXY,
     int tcDepthMapStep, int width, int height, int distLimit )
@@ -540,8 +545,8 @@ __global__ void volume_filterRcIdDepthMapByTcDepthMap_kernel(
         int vz = (int)*rcIdDepthMap_yx;
         if(vz > 0)
         {
-            float fpPlaneDepth = tex2D(depthsTex, vz, 0);
-            float fpPlaneDepthP = tex2D(depthsTex, vz - 1, 0);
+            float fpPlaneDepth = tex2D<float>(depthsTex, vz, 0);
+            float fpPlaneDepthP = tex2D<float>(depthsTex, vz - 1, 0);
             float step = fabsf(fpPlaneDepthP - fpPlaneDepth);
 
             float3 p = get3DPointForPixelAndFrontoParellePlaneRC(pix, fpPlaneDepth);
@@ -549,7 +554,7 @@ __global__ void volume_filterRcIdDepthMapByTcDepthMap_kernel(
             getPixelFor3DPointTC(tpixf, p);
             int2 tpix = make_int2((int)(tpixf.x + 0.5f), (int)(tpixf.y + 0.5f));
 
-            float depthTc = tex2D(sliceTex, tpix.x / tcDepthMapStep, tpix.y / tcDepthMapStep);
+            float depthTc = tex2D<float>(sliceTex, tpix.x / tcDepthMapStep, tpix.y / tcDepthMapStep);
             float depthTcP = size(sg_s_tC - p);
             int distid = (int)(fabsf(depthTc - depthTcP) / step + 0.5f);
 

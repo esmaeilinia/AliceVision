@@ -78,7 +78,7 @@ public:
         for( auto it : _mem ) delete it.second;
     }
 
-    PitchedMem_Texture<T,fMode,rMode>* get( int height, int width )
+    PitchedMem_Texture<T,fMode,rMode>* get( int width, int height )
     {
         auto it = _mem.find( PitchedMem_Tex_Index( width, height ) );
         if( it == _mem.end() )

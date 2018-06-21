@@ -51,6 +51,7 @@ __global__ void refine_selectPartOfDepthMapNearFPPlaneDepth_kernel(float* o0dept
 }
 
 __global__ void refine_dilateDepthMap_kernel(
+    cudaTextureObject_t depthsTex,
     float* depthMap, int depthMap_p,
     int width, int height, const float gammaC )
 {
@@ -59,7 +60,7 @@ __global__ void refine_dilateDepthMap_kernel(
 
     if((x < width) && (y < height))
     {
-        float depth = tex2D(depthsTex, x, y);
+        float depth = tex2D<float>(depthsTex, x, y);
 //        float maxw = -1.0f;
         if(depth < 0.0f)
         {
@@ -68,7 +69,7 @@ __global__ void refine_dilateDepthMap_kernel(
             {
                 for(int xp = -1; xp <= +1; xp++)
                 {
-                    float depthn = tex2D(depthsTex, x + xp, y + yp);
+                    float depthn = tex2D<float>(depthsTex, x + xp, y + yp);
                     if(depthn > 0.0f)
                     {
                         // float4 rc = uchar4_to_float4(tex2D(rTexU4, x+xp, y+yp));
@@ -1084,6 +1085,7 @@ __global__ void refine_computeDepthSimMapFromBestStatMap_kernel(float* simMap, i
 
 __global__ void refine_reprojTarTexLABByRcTcDepthsMap_kernel(
     cudaTextureObject_t t4tex,
+    cudaTextureObject_t depthsTex,
     uchar4* tex, int tex_p, float* rcDepthMap,
     int rcDepthMap_p, int width, int height,
     float depthMapShift)
@@ -1108,7 +1110,7 @@ __global__ void refine_reprojTarTexLABByRcTcDepthsMap_kernel(
             float2 tpcS = project3DPoint(sg_s_tP, rpS);
 
             int2 tpix = make_int2((int)(tpc.x + 0.5f), (int)(tpc.y + 0.5f));
-            float tcDepth = tex2D(depthsTex, tpix.x, tpix.y);
+            float tcDepth = tex2D<float>(depthsTex, tpix.x, tpix.y);
 
             if((tcDepth > 0.0f) && ((tpc.x + 0.5f) > 0.0f) && ((tpc.y + 0.5f) > 0.0f) &&
                ((tpc.x + 0.5f) < (float)width - 1.0f) && ((tpc.y + 0.5f) < (float)height - 1.0f))
@@ -1447,6 +1449,7 @@ __device__ float2 DPIXTCDRC(const float3& P)
 };
 
 __global__ void refine_computeRcTcDepthMap_kernel(
+    cudaTextureObject_t depthsTex,
     float* rcDepthMap, int rcDepthMap_p,
     int width, int height, float pixSizeRatioThr )
 {
@@ -1465,7 +1468,7 @@ __global__ void refine_computeRcTcDepthMap_kernel(
             float3 rp = get3DPointForPixelAndDepthFromRC(rpix, rcDepth);
             float2 tpc = project3DPoint(sg_s_tP, rp);
             int2 tpix = make_int2((int)(tpc.x + 0.5f), (int)(tpc.y + 0.5f));
-            float tcDepth = tex2D(depthsTex, tpc.x + 0.5f, tpc.y + 0.5f);
+            float tcDepth = tex2D<float>(depthsTex, tpc.x + 0.5f, tpc.y + 0.5f);
 
             if((tcDepth > 0.0f) && (tpix.x > 0) && (tpix.y > 0) && (tpix.x < width) && (tpix.y < height))
             {

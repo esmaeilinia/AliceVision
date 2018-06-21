@@ -21,6 +21,7 @@ __global__ void refine_selectPartOfDepthMapNearFPPlaneDepth_kernel(float* o0dept
                                                                    float fpPlaneDepthNext);
 
 __global__ void refine_dilateDepthMap_kernel(
+    cudaTextureObject_t depthsTex,
     float* depthMap, int depthMap_p,
     int width, int height, const float gammaC );
 
@@ -174,6 +175,7 @@ __global__ void refine_computeDepthSimMapFromBestStatMap_kernel(float* simMap, i
 
 __global__ void refine_reprojTarTexLABByRcTcDepthsMap_kernel(
     cudaTextureObject_t t4tex,
+    cudaTextureObject_t depthsTex,
     uchar4* tex, int tex_p,
     float* rcDepthMap, int rcDepthMap_p,
     int width, int height,
@@ -208,6 +210,7 @@ __global__ void refine_reprojTarSobelAndDPIXTCDRCRcTcDepthsMap_kernel(
     int width, int height, float depthMapShift);
 
 __global__ void refine_computeRcTcDepthMap_kernel(
+    cudaTextureObject_t depthsTex,
     float* rcDepthMap, int rcDepthMap_p,
     int width, int height, float pixSizeRatioThr );
 
