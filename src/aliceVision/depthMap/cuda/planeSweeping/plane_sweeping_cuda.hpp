@@ -73,22 +73,6 @@ void ps_deviceUpdateCam(
 void ps_deviceDeallocate(
                     int CUDAdeviceNo, int ncams, int scales);
 
-void ps_planeSweepingGPUPixels(
-                    // CudaArray<uchar4, 2>** ps_texs_arr,
-                    CudaHostMemoryHeap<float, 2>* odpt_hmh,
-                    CudaHostMemoryHeap<float, 2>* osim_hmh, cameraStruct** cams, int ncams, int width,
-                    int height, CudaHostMemoryHeap<int2, 2>& pixs_hmh,
-                    CudaHostMemoryHeap<float, 2>& depths_hmh, int slicesAtTime, int ntimes, int npixs,
-                    int wsh, int kernelSizeHalf, int nPlanes, int scale, int CUDAdeviceNo,
-                    int ncamsAllocated, int scales, bool verbose, bool doUsePixelsDepths, int nbest,
-                    bool useTcOrRcPixSize, float gammaC, float gammaP, bool subPixel, float epipShift = 0.0f
-                    /*,
-                    CudaHostMemoryHeap<float,2>  &sliceRef_hmh,
-                    CudaHostMemoryHeap<float3,2>  &slicePts_hmh,
-                    CudaHostMemoryHeap<float,2>  &sliceLocMin_hmh,
-                    CudaHostMemoryHeap<int,2>  &bdid_hmh
-                    */);
-
 void ps_aggregatePathVolume2(
                     CudaDeviceMemoryPitched<unsigned char, 3>& vol_dmp, int volDimX, int volDimY,
                     int volDimZ, float P1, float P2, bool transfer);
@@ -209,6 +193,7 @@ void ps_filterRcIdDepthMapByTcDepthMaps(
                     int CUDAdeviceNo, int ncamsAllocated, int scales,
                     CudaHostMemoryHeap<float, 2>** tcDepthMaps_hmh, bool verbose, int distLimit);
 
+#if 0
 void ps_planeSweepingGPUPixelsFine(
                     // CudaArray<uchar4, 2>** ps_texs_arr,
                     CudaHostMemoryHeap<float, 2>* odpt_hmh,
@@ -219,6 +204,7 @@ void ps_planeSweepingGPUPixelsFine(
                     int npixs, int wsh, int kernelSizeHalf, int nPlanes, int scale, int CUDAdeviceNo,
                     int ncamsAllocated, int scales, bool verbose, float gammaC, float gammaP,
                     float epipShift = 0.0f);
+#endif
 
 void ps_planeSweepNPlanes(
                     // CudaArray<uchar4, 2>** ps_texs_arr,

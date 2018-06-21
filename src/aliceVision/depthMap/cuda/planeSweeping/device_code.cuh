@@ -26,10 +26,6 @@ namespace depthMap {
 //
 extern texture<int4, 2, cudaReadModeElementType> volPixsTex;
 
-extern texture<int2, 2, cudaReadModeElementType> pixsTex;
-
-extern texture<uint2, 2, cudaReadModeElementType> sliceTexUInt2;
-
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 
 __global__ void compute_varLofLABtoW_kernel( cudaTextureObject_t r4tex, uchar4* labMap, int labMap_p, int width, int height, int wsh);
@@ -82,28 +78,6 @@ static __device__ float move3DPointByTcOrRcPixStep(float3& p, float pixStep, boo
     }
 }
 
-__global__ void slice_kernel(
-    cudaTextureObject_t r4tex,
-    cudaTextureObject_t t4tex,
-    cudaTextureObject_t depthsTex,
-    float* slice, int slice_p,
-    // float3* slicePts, int slicePts_p,
-    int ndepths, int slicesAtTime,
-    int width, int height, int wsh, int t, int npixs,
-    int maxDepth,
-    bool doUsePixelsDepths, bool useTcOrRcPixSize, const float gammaC, const float gammaP,
-    const float epipShift);
-
-__global__ void slice_fine_kernel(
-    cudaTextureObject_t r4tex,
-    cudaTextureObject_t t4tex,
-    cudaTextureObject_t normalsTex,
-    cudaTextureObject_t depthtsTex,
-    float* slice, int slice_p,
-    int ndepths, int slicesAtTime,
-    int width, int height, int wsh, int t, int npixs,
-    int maxDepth, const float gammaC, const float gammaP, const float epipShift);
-
 __global__ void smoothDepthMap_kernel(
     cudaTextureObject_t r4tex,
     cudaTextureObject_t depthsTex,
@@ -135,28 +109,6 @@ __global__ void locmin_kernel(
     int width, int height, int wsh, int t, int npixs,
     int maxDepth,
     bool doUsePixelsDepths, int kernelSizeHalf );
-
-__global__ void getBest_kernel(
-    cudaTextureObject_t depthsTex,
-    cudaTextureObject_t sliceTex,
-    float* slice, int slice_p,
-    // int* bestDptId, int bestDptId_p,
-    float* bestDpt, int bestDpt_p,
-    float* bestSim, int bestSim_p,
-    int slicesAtTime, int ndepths, int t, int npixs,
-    int wsh, int width, int height, bool doUsePixelsDepths, int nbest, bool useTcOrRcPixSize,
-    bool subPixel );
-
-__global__ void getBest_fine_kernel(
-    cudaTextureObject_t depthsTex,
-    cudaTextureObject_t sliceTex,
-    float* slice, int slice_p,
-    // int* bestDptId, int bestDptId_p,
-    float* bestDpt, int bestDpt_p,
-    float* bestSim, int bestSim_p,
-    int slicesAtTime, int ndepths, int t, int npixs,
-    int wsh, int width, int height );
-
 
 __global__ void getRefTexLAB_kernel(
     cudaTextureObject_t r4tex,
