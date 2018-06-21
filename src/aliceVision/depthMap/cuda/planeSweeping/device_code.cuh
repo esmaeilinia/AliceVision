@@ -21,11 +21,6 @@ namespace depthMap {
 
 #define MAX_CUDA_DEVICES 10
 
-//
-// All of these are accessed in Point Mode
-//
-extern texture<int4, 2, cudaReadModeElementType> volPixsTex;
-
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 
 __global__ void compute_varLofLABtoW_kernel( cudaTextureObject_t r4tex, uchar4* labMap, int labMap_p, int width, int height, int wsh);

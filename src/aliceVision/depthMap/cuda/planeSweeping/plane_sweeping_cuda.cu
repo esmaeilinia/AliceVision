@@ -202,12 +202,6 @@ void ps_deviceAllocate( int ncams, int width, int height, int scales,
     // printf("ps_deviceAllocate\n");
     // pr_printfDeviceMemoryInfo();
 
-    ///////////////////////////////////////////////////////////////////////////////
-    // setup textures parameters
-
-    volPixsTex.filterMode = cudaFilterModePoint;
-    volPixsTex.normalized = false;
-
     pr_printfDeviceMemoryInfo();
 
     ///////////////////////////////////////////////////////////////////////////////
@@ -691,27 +685,30 @@ void ps_transposeVolume(CudaHostMemoryHeap<unsigned char, 3>* ovol_hmh,
 }
 
 void ps_computeSimilarityVolume(
-                                CudaDeviceMemoryPitched<unsigned char, 3>& vol_dmp, cameraStruct** cams, int ncams,
-                                int width, int height, int volStepXY, int volDimX, int volDimY, int volDimZ, int volLUX,
-                                int volLUY, int volLUZ, CudaHostMemoryHeap<int4, 2>& volPixs_hmh,
-                                CudaHostMemoryHeap<float, 2>& depths_hmh, int nDepthsToSearch, int slicesAtTime,
-                                int ntimes, int npixs, int wsh, int kernelSizeHalf, int nDepths, int scale,
-                                int CUDAdeviceNo, int ncamsAllocated, int scales, bool verbose, bool doUsePixelsDepths,
-                                int nbest, bool useTcOrRcPixSize, float gammaC, float gammaP, bool subPixel,
-                                float epipShift)
+    CudaDeviceMemoryPitched<unsigned char, 3>& vol_dmp, cameraStruct** cams, int ncams,
+    int width, int height, int volStepXY, int volDimX, int volDimY, int volDimZ, int volLUX,
+    int volLUY, int volLUZ, CudaHostMemoryHeap<int4, 2>& volPixs_hmh,
+    CudaHostMemoryHeap<float, 2>& depths_hmh, int nDepthsToSearch, int slicesAtTime,
+    int ntimes, int npixs, int wsh, int kernelSizeHalf, int nDepths, int scale,
+    int CUDAdeviceNo, int ncamsAllocated, int scales, bool verbose, bool doUsePixelsDepths,
+    int nbest, bool useTcOrRcPixSize, float gammaC, float gammaP, bool subPixel,
+    float epipShift )
 {
     clock_t tall = tic();
     testCUDAdeviceNo(CUDAdeviceNo);
 
     if(verbose)
         printf("nDepths %i, nDepthsToSearch %i \n", nDepths, nDepthsToSearch);
-    CudaArray<int4, 2> volPixs_arr(volPixs_hmh);
+
+    auto volPixs_arr = global_data.pitched_mem_int4_point_tex_cache.get(
+        volPixs_hmh.getSize()[0],
+        volPixs_hmh.getSize()[1] );
+    copy( *volPixs_arr->mem, volPixs_hmh );
+
     auto depths_arr = global_data.pitched_mem_float_point_tex_cache.get(
         depths_hmh.getSize()[0],
         depths_hmh.getSize()[1] );
     copy( *depths_arr->mem, depths_hmh );
-
-    cudaBindTextureToArray(volPixsTex, volPixs_arr.getArray(), cudaCreateChannelDesc<int4>());
 
     int block_size = 8;
     dim3 block(block_size, block_size, 1);
@@ -748,10 +745,13 @@ void ps_computeSimilarityVolume(
             r4tex,
             t4tex,
             depths_arr->tex,
-            slice_dmp.getBuffer(), slice_dmp.stride()[0], nDepthsToSearch, nDepths,
+            volPixs_arr->tex,
+            slice_dmp.getBuffer(), slice_dmp.stride()[0],
+            nDepthsToSearch, nDepths,
             slicesAtTime, width, height, wsh, t, npixs, gammaC, gammaP, epipShift);
 
         volume_saveSliceToVolume_kernel<<<grid, block>>>(
+            volPixs_arr->tex,
             vol_dmp.getBuffer(), vol_dmp.stride()[1], vol_dmp.stride()[0],
             slice_dmp.getBuffer(), slice_dmp.stride()[0],
             nDepthsToSearch, nDepths,
@@ -760,8 +760,8 @@ void ps_computeSimilarityVolume(
         CHECK_CUDA_ERROR();
     }
 
-    cudaUnbindTexture(volPixsTex);
     global_data.pitched_mem_float_point_tex_cache.put( depths_arr );
+    global_data.pitched_mem_int4_point_tex_cache .put( volPixs_arr );
 
     if(verbose)
         printf("ps_computeSimilarityVolume elapsed time: %f ms \n", toc(tall));
@@ -788,11 +788,11 @@ float ps_planeSweepingGPUPixelsVolume(
 
     //--------------------------------------------------------------------------------------------------
     // compute similarity volume
-    // ps_computeSimilarityVolume(ps_texs_arr, volSim_dmp, cams, ncams, width, height, volStepXY, volDimX, volDimY,
-    ps_computeSimilarityVolume( volSim_dmp, cams, ncams, width, height, volStepXY, volDimX, volDimY,
-                               volDimZ, volLUX, volLUY, volLUZ, volPixs_hmh, depths_hmh, nDepthsToSearch, slicesAtTime,
-                               ntimes, npixs, wsh, kernelSizeHalf, nDepths, scale, CUDAdeviceNo, ncamsAllocated, scales,
-                               verbose, doUsePixelsDepths, nbest, useTcOrRcPixSize, gammaC, gammaP, subPixel, epipShift);
+    ps_computeSimilarityVolume(
+        volSim_dmp, cams, ncams, width, height, volStepXY, volDimX, volDimY,
+        volDimZ, volLUX, volLUY, volLUZ, volPixs_hmh, depths_hmh, nDepthsToSearch, slicesAtTime,
+        ntimes, npixs, wsh, kernelSizeHalf, nDepths, scale, CUDAdeviceNo, ncamsAllocated, scales,
+        verbose, doUsePixelsDepths, nbest, useTcOrRcPixSize, gammaC, gammaP, subPixel, epipShift );
 
     //--------------------------------------------------------------------------------------------------
     // copy to host

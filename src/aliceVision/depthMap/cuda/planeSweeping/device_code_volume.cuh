@@ -16,15 +16,18 @@ __global__ void volume_slice_kernel(
     cudaTextureObject_t r4tex,
     cudaTextureObject_t t4tex,
     cudaTextureObject_t depthsTex,
+    cudaTextureObject_t volPixsTex,
     unsigned char* slice, int slice_p,
     // float3* slicePts, int slicePts_p,
     int nsearchdepths, int ndepths, int slicesAtTime, int width, int height, int wsh,
-    int t, int npixs, const float gammaC, const float gammaP, const float epipShift);
+    int t, int npixs, const float gammaC, const float gammaP, const float epipShift );
 
-__global__ void volume_saveSliceToVolume_kernel(unsigned char* volume, int volume_s, int volume_p, unsigned char* slice,
-                                                int slice_p, int nsearchdepths, int ndepths, int slicesAtTime,
-                                                int width, int height, int t, int npixs, int volStepXY, int volDimX,
-                                                int volDimY, int volDimZ, int volLUX, int volLUY, int volLUZ);
+__global__ void volume_saveSliceToVolume_kernel(
+    cudaTextureObject_t volPixsTex,
+    unsigned char* volume, int volume_s, int volume_p, unsigned char* slice,
+    int slice_p, int nsearchdepths, int ndepths, int slicesAtTime,
+    int width, int height, int t, int npixs, int volStepXY, int volDimX,
+    int volDimY, int volDimZ, int volLUX, int volLUY, int volLUZ );
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

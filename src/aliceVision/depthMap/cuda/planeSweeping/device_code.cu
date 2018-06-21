@@ -20,10 +20,6 @@
 namespace aliceVision {
 namespace depthMap {
 
-// Global data handlers and parameters
-
-texture<int4, 2, cudaReadModeElementType> volPixsTex;
-
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 
 __device__ unsigned char computeSigmaOfL( cudaTextureObject_t r4tex, int x, int y, int r)
