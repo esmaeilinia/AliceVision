@@ -1376,27 +1376,6 @@ __global__ void refine_compPhotoErrABG_kernel(float* osimMap, int osimMap_p, int
     };
 }
 
-/*
- * Buggy code: tTexU4 returns unsigned char and not normalized float
- *
-__device__ float2 ComputeSobelTarIm(int x, int y)
-{
-    unsigned char ul = 255.0f * tex2D(tTexU4, x - 1, y - 1).x; // upper left
-    unsigned char um = 255.0f * tex2D(tTexU4, x + 0, y - 1).x; // upper middle
-    unsigned char ur = 255.0f * tex2D(tTexU4, x + 1, y - 1).x; // upper right
-    unsigned char ml = 255.0f * tex2D(tTexU4, x - 1, y + 0).x; // middle left
-    unsigned char mm = 255.0f * tex2D(tTexU4, x + 0, y + 0).x; // middle (unused)
-    unsigned char mr = 255.0f * tex2D(tTexU4, x + 1, y + 0).x; // middle right
-    unsigned char ll = 255.0f * tex2D(tTexU4, x - 1, y + 1).x; // lower left
-    unsigned char lm = 255.0f * tex2D(tTexU4, x + 0, y + 1).x; // lower middle
-    unsigned char lr = 255.0f * tex2D(tTexU4, x + 1, y + 1).x; // lower right
-
-    int Horz = ur + 2 * mr + lr - ul - 2 * ml - ll;
-    int Vert = ul + 2 * um + ur - ll - 2 * lm - lr;
-    return make_float2((float)Vert, (float)Horz);
-}
-*/
-
 __device__ float2 DPIXTCDRC(const float3& P)
 {
     float M3P = sg_s_tP[2] * P.x + sg_s_tP[5] * P.y + sg_s_tP[8] * P.z + sg_s_tP[11];
@@ -1436,55 +1415,6 @@ __device__ float2 DPIXTCDRC(const float3& P)
 
     return op;
 };
-
-/*
- * Note: ComputeSobelTarIm called from here is buggy
- *
-__global__ void refine_reprojTarSobelAndDPIXTCDRCRcTcDepthsMap_kernel(float4* tex, int tex_p, float* rcDepthMap,
-                                                                      int rcDepthMap_p, int width, int height,
-                                                                      float depthMapShift)
-{
-    int x = blockIdx.x * blockDim.x + threadIdx.x;
-    int y = blockIdx.y * blockDim.y + threadIdx.y;
-    int2 rpix;
-    rpix.x = x;
-    rpix.y = y;
-
-    if((x < width) && (y < height))
-    {
-        float rcDepth = rcDepthMap[y * rcDepthMap_p + x];
-        float4 col = make_float4(0.0f, 0.0f, 0.0f, 0.0f);
-
-        if(rcDepth > 0.0f)
-        {
-            float3 rp = get3DPointForPixelAndDepthFromRC(rpix, rcDepth);
-            float3 rpS = get3DPointForPixelAndDepthFromRC(rpix, rcDepth + depthMapShift);
-
-            float2 tpc = project3DPoint(sg_s_tP, rp);
-            int2 tpix = make_int2((int)(tpc.x + 0.5f), (int)(tpc.y + 0.5f));
-            float tcDepth = tex2D(depthsTex, tpix.x, tpix.y);
-
-            if((tcDepth > 0.0f) && ((tpc.x + 0.5f) > 0.0f) && ((tpc.y + 0.5f) > 0.0f) &&
-               ((tpc.x + 0.5f) < (float)width - 1.0f) && ((tpc.y + 0.5f) < (float)height - 1.0f))
-            {
-                float pixSize = computePixSize(rp);
-                float3 tp = get3DPointForPixelAndDepthFromTC(tpc, tcDepth);
-                float dist = size(rp - tp);
-                if(dist < pixSize)
-                {
-                    // col = float4_to_uchar4(255.0f*tex2D(t4tex, (float)tpc.x+0.5f, (float)tpc.y+0.5f));
-                    // float2 op = DPIXTCDRC(tp);
-                    float2 op = DPIXTCDRC(rpS);
-                    float2 so = ComputeSobelTarIm(tpix.x, tpix.y);
-                    col = make_float4(op.x, op.y, so.x, so.y);
-                }
-            }
-        }
-
-        tex[y * tex_p + x] = col;
-    }
-}
-*/
 
 __global__ void refine_computeRcTcDepthMap_kernel(float* rcDepthMap, int rcDepthMap_p, int width, int height,
                                                   float pixSizeRatioThr)

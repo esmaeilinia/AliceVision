@@ -218,25 +218,25 @@ __global__ void downscale_bilateral_smooth_lab_kernel(
     cudaTextureObject_t gaussianTex,
     cudaTextureObject_t r4tex,
     uchar4* texLab, int texLab_p,
-    int width, int height, int scale, int radius, float gammaC);
+    int width, int height, int scale, int radius, float gammaC );
 
 __global__ void downscale_gauss_smooth_lab_kernel(
     cudaTextureObject_t gaussianTex,
     cudaTextureObject_t r4tex,
     uchar4* texLab, int texLab_p,
-    int width, int height, int scale, int radius);
+    int width, int height, int scale, int radius );
 
 __global__ void downscale_mean_smooth_lab_kernel(
     cudaTextureObject_t r4tex,
     uchar4* texLab, int texLab_p,
-    int width, int height, int scale);
+    int width, int height, int scale );
 
 __global__ void ptsStatForRcDepthMap_kernel(
     cudaTextureObject_t r4tex,
     float2* out, int out_p,
     float3* pts, int pts_p,
     int npts, int width, int height,
-    int maxNPixSize, int wsh, const float gammaC, const float gammaP);
+    int maxNPixSize, int wsh, const float gammaC, const float gammaP );
 
 __global__ void getSilhoueteMap_kernel(bool* out, int out_p, int step, int width, int height, const uchar4 maskColorLab);
 

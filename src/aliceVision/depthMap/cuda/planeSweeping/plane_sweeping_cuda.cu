@@ -1926,9 +1926,9 @@ void ps_planeSweepAggr(CudaHostMemoryHeap<uchar4, 2>& rimg_hmh, CudaHostMemoryHe
     // CudaArray<unsigned char, 2> rtex_arr(CudaSize<2>(width, height));
     // CudaArray<unsigned char, 2> gtex_arr(CudaSize<2>(width, height));
     // CudaArray<unsigned char, 2> btex_arr(CudaSize<2>(width, height));
-    auto rtex = global_data.getPitchedMemUchar_LinearTexture( width, height );
-    auto gtex = global_data.getPitchedMemUchar_LinearTexture( width, height );
-    auto btex = global_data.getPitchedMemUchar_LinearTexture( width, height );
+    auto rtex = global_data.pitched_mem_uchar_linear_tex_cache.get( width, height );
+    auto gtex = global_data.pitched_mem_uchar_linear_tex_cache.get( width, height );
+    auto btex = global_data.pitched_mem_uchar_linear_tex_cache.get( width, height );
 
     CudaDeviceMemoryPitched<unsigned char, 2> tex_dmp(CudaSize<2>(width, height));
 
@@ -2043,9 +2043,9 @@ void ps_planeSweepAggr(CudaHostMemoryHeap<uchar4, 2>& rimg_hmh, CudaHostMemoryHe
     // cudaUnbindTexture(rtex);
     // cudaUnbindTexture(gtex);
     // cudaUnbindTexture(btex);
-    global_data.putPitchedMemUchar_LinearTexture( rtex );
-    global_data.putPitchedMemUchar_LinearTexture( gtex );
-    global_data.putPitchedMemUchar_LinearTexture( btex );
+    global_data.pitched_mem_uchar_linear_tex_cache.put( rtex );
+    global_data.pitched_mem_uchar_linear_tex_cache.put( gtex );
+    global_data.pitched_mem_uchar_linear_tex_cache.put( btex );
 
     if(verbose)
         printf("gpu elapsed time: %f ms \n", toc(tall));
@@ -2338,10 +2338,11 @@ void ps_refineDepthMapInternal(
     dim3 grid(divUp(width, block_size), divUp(height, block_size), 1);
 
     // computed three depths map ... -1,0,1 ... from dilated input depth map .. and add last
-    refine_computeDepthsMapFromDepthMap_kernel<<<grid, block>>>(dsm_dmp.getBuffer(), dsm_dmp.stride()[0],
-                                                                idepthMap_dmp.getBuffer(), idepthMap_dmp.stride()[0],
-                                                                width, height, moveByTcOrRc, step);
-    cudaThreadSynchronize();
+    refine_computeDepthsMapFromDepthMap_kernel<<<grid, block>>>(
+        dsm_dmp.getBuffer(), dsm_dmp.stride()[0],
+        idepthMap_dmp.getBuffer(), idepthMap_dmp.stride()[0],
+        width, height, moveByTcOrRc, step);
+    // cudaThreadSynchronize();
 
     // for each depth map compute sim map in pixels where depthMap is defined
     // int id = 1;
@@ -2349,8 +2350,10 @@ void ps_refineDepthMapInternal(
     {
         refine_reprojTarTexLABByDepthsMap_kernel<<<grid, block>>>(
             t4tex,
-            dsm_dmp.getBuffer(), dsm_dmp.stride()[0], timg_dmp.getBuffer(), timg_dmp.stride()[0], width, height, id);
-        cudaThreadSynchronize();
+            dsm_dmp.getBuffer(), dsm_dmp.stride()[0],
+            timg_dmp.getBuffer(), timg_dmp.stride()[0],
+            width, height, id );
+        // cudaThreadSynchronize();
 
         cudaUnbindTexture(tTexU4);
         copy((tTexU4_arr), timg_dmp);
@@ -3236,7 +3239,7 @@ void ps_reprojectRGBTcImageByDepthMap(CudaHostMemoryHeap<uchar4, 2>* iTcoRcRgbIm
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // CudaDeviceMemoryPitched<uchar4, 2> iTcoRcimg_dmp(*iTcoRcRgbImage_hmh);
     auto iTcoRcimg_dmp =
-        global_data.getPitchedMemUchar4_LinearTexture(
+        global_data.pitched_mem_uchar4_linear_tex_cache.get(
             iTcoRcRgbImage_hmh->getSize()[0],
             iTcoRcRgbImage_hmh->getSize()[1] );
     copy( *iTcoRcRgbImage_hmh, *iTcoRcimg_dmp->mem );
@@ -3258,7 +3261,7 @@ void ps_reprojectRGBTcImageByDepthMap(CudaHostMemoryHeap<uchar4, 2>* iTcoRcRgbIm
     copy((*iTcoRcRgbImage_hmh), *iTcoRcimg_dmp->mem );
 
     // cudaUnbindTexture(t4tex);
-    global_data.putPitchedMemUchar4_LinearTexture( iTcoRcimg_dmp );
+    global_data.pitched_mem_uchar4_linear_tex_cache.put( iTcoRcimg_dmp );
 
     if(verbose)
         printf("gpu elapsed time: %f ms \n", toc(tall));
@@ -3348,7 +3351,7 @@ void ps_retexture(CudaHostMemoryHeap<uchar4, 2>* bmpOrig_hmh, CudaHostMemoryHeap
     // CudaArray<uchar4, 2> bmpOrig_arr(*bmpOrig_hmh);
     // cudaBindTextureToArray(r4tex, bmpOrig_arr.getArray(), cudaCreateChannelDesc<uchar4>());
     auto bmpOrig_arr =
-        global_data.getPitchedMemUchar4_LinearTexture(
+        global_data.pitched_mem_uchar4_linear_tex_cache.get(
             bmpOrig_hmh->getSize()[0],
             bmpOrig_hmh->getSize()[1] );
     copy( *bmpOrig_hmh, *bmpOrig_arr->mem );
@@ -3373,7 +3376,7 @@ void ps_retexture(CudaHostMemoryHeap<uchar4, 2>* bmpOrig_hmh, CudaHostMemoryHeap
     // cudaUnbindTexture(r4tex);
 
     copy( *bmpObj_hmh, bmpObj_dmp);
-    global_data.putPitchedMemUchar4_LinearTexture( bmpOrig_arr );
+    global_data.pitched_mem_uchar4_linear_tex_cache.put( bmpOrig_arr );
 
     if(verbose)
         printf("gpu elapsed time: %f ms \n", toc(tall));

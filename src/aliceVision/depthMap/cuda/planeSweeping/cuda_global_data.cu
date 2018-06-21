@@ -107,8 +107,9 @@ void GlobalData::allocScaledPictureArrays( int scales, int ncams, int width, int
 {
     _scaled_picture_scales = scales;
 
-    _scaled_picture_array.resize( scales * ncams );
-    _scaled_picture_tex  .resize( scales * ncams );
+    _scaled_picture_array    .resize( scales * ncams );
+    _scaled_picture_tex      .resize( scales * ncams );
+    _scaled_picture_tex_point.resize( scales * ncams );
 
     cudaResourceDesc res_desc;
     res_desc.resType = cudaResourceTypeArray;
@@ -119,8 +120,8 @@ void GlobalData::allocScaledPictureArrays( int scales, int ncams, int width, int
     tex_desc.addressMode[0]   = cudaAddressModeClamp;
     tex_desc.addressMode[1]   = cudaAddressModeClamp;
     tex_desc.addressMode[2]   = cudaAddressModeClamp;
-    tex_desc.readMode         = cudaReadModeNormalizedFloat;
-    tex_desc.filterMode       = cudaFilterModeLinear;
+    // tex_desc.readMode         = cudaReadModeNormalizedFloat;
+    // tex_desc.filterMode       = cudaFilterModeLinear;
 
     for( int c=0; c<ncams; c++ )
     {
@@ -132,7 +133,16 @@ void GlobalData::allocScaledPictureArrays( int scales, int ncams, int width, int
 
             res_desc.res.array.array = _scaled_picture_array[ c * scales + s ]->getArray();
 
+            tex_desc.readMode         = cudaReadModeNormalizedFloat;
+            tex_desc.filterMode       = cudaFilterModeLinear;
             cudaCreateTextureObject( &_scaled_picture_tex[ c * scales + s ],
+                                     &res_desc,
+                                     &tex_desc,
+                                     0 );
+
+            tex_desc.readMode         = cudaReadModeElementType;
+            tex_desc.filterMode       = cudaFilterModePoint;
+            cudaCreateTextureObject( &_scaled_picture_tex_point[ c * scales + s ],
                                      &res_desc,
                                      &tex_desc,
                                      0 );
@@ -158,6 +168,13 @@ void GlobalData::freeScaledPictureArrays( )
     }
 
     _scaled_picture_tex.clear();
+
+    for( cudaTextureObject_t& obj : _scaled_picture_tex_point )
+    {
+        cudaDestroyTextureObject( obj );
+    }
+
+    _scaled_picture_tex_point.clear();
 }
 
 CudaArray<uchar4,2>* GlobalData::getScaledPictureArrayPtr( int scale, int cam )
@@ -173,6 +190,11 @@ CudaArray<uchar4,2>& GlobalData::getScaledPictureArray( int scale, int cam )
 cudaTextureObject_t GlobalData::getScaledPictureTex( int scale, int cam )
 {
     return _scaled_picture_tex[ cam * _scaled_picture_scales + scale ];
+}
+
+cudaTextureObject_t GlobalData::getScaledPictureTexPoint( int scale, int cam )
+{
+    return _scaled_picture_tex_point[ cam * _scaled_picture_scales + scale ];
 }
 
 void GlobalData::allocPyramidArrays( int levels, int w, int h )
@@ -239,64 +261,6 @@ CudaDeviceMemoryPitched<uchar4,2>& GlobalData::getPyramidArray( int level )
 cudaTextureObject_t GlobalData::getPyramidTex( int level )
 {
     return _pyramid_tex[ level ];
-}
-
-PitchedMem_LinearTexture<uchar4,cudaFilterModeLinear>* GlobalData::getPitchedMemUchar4_LinearTexture( int width, int height )
-{
-    auto it = _pitched_mem_uchar4_linear_tex_cache.find( PitchedMem_Tex_Index( width, height ) );
-    if( it == _pitched_mem_uchar4_linear_tex_cache.end() )
-    {
-        std::cerr << "Allocate pitched mem uchar4 with linear tex " << width << "X" << height << std::endl;
-        PitchedMem_LinearTexture<uchar4,cudaFilterModeLinear>* ptr = new PitchedMem_LinearTexture<uchar4,cudaFilterModeLinear>( width, height );
-        return ptr;
-    }
-    else
-    {
-        std::cerr << "Getting pitched mem uchar4 with linear tex " << width << "X" << height << std::endl;
-        PitchedMem_LinearTexture<uchar4,cudaFilterModeLinear>* ptr = it->second;
-        _pitched_mem_uchar4_linear_tex_cache.erase( it );
-        return ptr;
-    }
-}
-
-void GlobalData::putPitchedMemUchar4_LinearTexture( PitchedMem_LinearTexture<uchar4,cudaFilterModeLinear>* ptr )
-{
-    int width  = ptr->mem->getSize()[0];
-    int height = ptr->mem->getSize()[1];
-    std::cerr << "Putting pitched mem uchar4 with linear tex " << width << "X" << height << std::endl;
-    PitchedMem_Tex_Index idx( width, height );
-    _pitched_mem_uchar4_linear_tex_cache.insert(
-        std::pair<PitchedMem_Tex_Index,PitchedMem_LinearTexture<uchar4,cudaFilterModeLinear>*>(
-            idx, ptr ) );
-}
-
-PitchedMem_LinearTexture<unsigned char,cudaFilterModeLinear>* GlobalData::getPitchedMemUchar_LinearTexture( int width, int height )
-{
-    auto it = _pitched_mem_uchar_linear_tex_cache.find( PitchedMem_Tex_Index( width, height ) );
-    if( it == _pitched_mem_uchar_linear_tex_cache.end() )
-    {
-        std::cerr << "Allocate pitched mem uchar4 with linear tex " << width << "X" << height << std::endl;
-        PitchedMem_LinearTexture<uchar,cudaFilterModeLinear>* ptr = new PitchedMem_LinearTexture<uchar,cudaFilterModeLinear>( width, height );
-        return ptr;
-    }
-    else
-    {
-        std::cerr << "Getting pitched mem uchar4 with linear tex " << width << "X" << height << std::endl;
-        PitchedMem_LinearTexture<uchar,cudaFilterModeLinear>* ptr = it->second;
-        _pitched_mem_uchar_linear_tex_cache.erase( it );
-        return ptr;
-    }
-}
-
-void GlobalData::putPitchedMemUchar_LinearTexture( PitchedMem_LinearTexture<unsigned char,cudaFilterModeLinear>* ptr )
-{
-    int width  = ptr->mem->getSize()[0];
-    int height = ptr->mem->getSize()[1];
-    std::cerr << "Putting pitched mem uchar4 with linear tex " << width << "X" << height << std::endl;
-    PitchedMem_Tex_Index idx( width, height );
-    _pitched_mem_uchar_linear_tex_cache.insert(
-        std::pair<PitchedMem_Tex_Index,PitchedMem_LinearTexture<uchar,cudaFilterModeLinear>*>(
-            idx, ptr ) );
 }
 
 }; // namespace depthMap

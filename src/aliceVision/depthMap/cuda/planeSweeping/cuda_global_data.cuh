@@ -12,6 +12,7 @@
 #include <map>
 #include <vector>
 #include <algorithm>
+#include <iostream>
 
 namespace aliceVision {
 namespace depthMap {
@@ -28,13 +29,13 @@ struct GaussianArray
 
 typedef std::pair<int,int> PitchedMem_Tex_Index;
 
-template<typename T,cudaTextureFilterMode fMode>
-struct PitchedMem_LinearTexture
+template<typename T,cudaTextureFilterMode fMode,cudaTextureReadMode rMode>
+struct PitchedMem_Texture
 {
     CudaDeviceMemoryPitched<T,2>* mem;
     cudaTextureObject_t           tex;
 
-    PitchedMem_LinearTexture( int w, int h )
+    PitchedMem_Texture( int w, int h )
     {
         mem = new CudaDeviceMemoryPitched<T,2>( CudaSize<2>( w, h ) );
 
@@ -44,7 +45,7 @@ struct PitchedMem_LinearTexture
         tex_desc.addressMode[0]   = cudaAddressModeClamp;
         tex_desc.addressMode[1]   = cudaAddressModeClamp;
         tex_desc.addressMode[2]   = cudaAddressModeClamp;
-        tex_desc.readMode         = cudaReadModeNormalizedFloat;
+        tex_desc.readMode         = rMode; // cudaReadModeNormalizedFloat;
         tex_desc.filterMode       = fMode;
 
         cudaResourceDesc res_desc;
@@ -61,11 +62,53 @@ struct PitchedMem_LinearTexture
                                  0 );
     }
 
-    ~PitchedMem_LinearTexture( )
+    ~PitchedMem_Texture( )
     {
         cudaDestroyTextureObject( tex );
         delete mem;
     }
+};
+
+template<typename T,cudaTextureFilterMode fMode,cudaTextureReadMode rMode>
+class TexturedPitchedMem
+{
+public:
+    ~TexturedPitchedMem( )
+    {
+        for( auto it : _mem ) delete it.second;
+    }
+
+    PitchedMem_Texture<T,fMode,rMode>* get( int height, int width )
+    {
+        auto it = _mem.find( PitchedMem_Tex_Index( width, height ) );
+        if( it == _mem.end() )
+        {
+            std::cerr << "Allocate textured pitched mem " << width << "X" << height << std::endl;
+            PitchedMem_Texture<T,fMode,rMode>* ptr = new PitchedMem_Texture<T,fMode,rMode>( width, height );
+            return ptr;
+        }
+        else
+        {
+            std::cerr << "Getting textured pitched mem " << width << "X" << height << std::endl;
+            PitchedMem_Texture<T,fMode,rMode>* ptr = it->second;
+            _mem.erase( it );
+            return ptr;
+        }
+    }
+
+    void put( PitchedMem_Texture<T,fMode,rMode>* ptr )
+    {
+        int width  = ptr->mem->getSize()[0];
+        int height = ptr->mem->getSize()[1];
+        std::cerr << "Putting textured pitched mem " << width << "X" << height << std::endl;
+        PitchedMem_Tex_Index idx( width, height );
+        _mem.insert(
+            std::pair<PitchedMem_Tex_Index,PitchedMem_Texture<T,fMode,rMode>*>(
+                idx, ptr ) );
+    }
+
+private:
+    std::multimap<PitchedMem_Tex_Index,PitchedMem_Texture<T,fMode,rMode>*> _mem;
 };
 
 class GlobalData
@@ -82,31 +125,39 @@ public:
     CudaArray<uchar4,2>* getScaledPictureArrayPtr( int scale, int cam );
     CudaArray<uchar4,2>& getScaledPictureArray( int scale, int cam );
     cudaTextureObject_t  getScaledPictureTex( int scale, int cam );
+    cudaTextureObject_t  getScaledPictureTexPoint( int scale, int cam );
 
     void                               allocPyramidArrays( int levels, int width, int height );
     void                               freePyramidArrays( );
     CudaDeviceMemoryPitched<uchar4,2>& getPyramidArray( int level );
     cudaTextureObject_t                getPyramidTex( int level );
 
-    PitchedMem_LinearTexture<uchar4,cudaFilterModeLinear>*  getPitchedMemUchar4_LinearTexture( int width, int height );
-    void                                                    putPitchedMemUchar4_LinearTexture( PitchedMem_LinearTexture<uchar4,cudaFilterModeLinear>* ptr );
-
-    PitchedMem_LinearTexture<uchar,cudaFilterModeLinear>*   getPitchedMemUchar_LinearTexture( int width, int height );
-    void                                                    putPitchedMemUchar_LinearTexture( PitchedMem_LinearTexture<uchar,cudaFilterModeLinear>* ptr );
-
 private:
     std::map<GaussianArrayIndex,GaussianArray*> _gaussian_arr_table;
 
     std::vector<CudaArray<uchar4, 2>*>          _scaled_picture_array;
     std::vector<cudaTextureObject_t>            _scaled_picture_tex;
+    std::vector<cudaTextureObject_t>            _scaled_picture_tex_point;
     int                                         _scaled_picture_scales;
 
     std::vector<CudaDeviceMemoryPitched<uchar4, 2>*> _pyramid_array;
     std::vector<cudaTextureObject_t>                 _pyramid_tex;
     int                                              _pyramid_levels;
 
-    std::multimap<PitchedMem_Tex_Index,PitchedMem_LinearTexture<uchar4,cudaFilterModeLinear>*> _pitched_mem_uchar4_linear_tex_cache;
-    std::multimap<PitchedMem_Tex_Index,PitchedMem_LinearTexture<uchar,cudaFilterModeLinear>*>  _pitched_mem_uchar_linear_tex_cache;
+public:
+    typedef TexturedPitchedMem<uchar4,cudaFilterModeLinear,cudaReadModeNormalizedFloat>
+            TexturedPitchedMemUchar4Linear;
+    typedef TexturedPitchedMem<unsigned char,cudaFilterModeLinear,cudaReadModeNormalizedFloat>
+            TexturedPitchedMemUcharLinear;
+    typedef TexturedPitchedMem<uchar4,cudaFilterModePoint,cudaReadModeElementType>
+            TexturedPitchedMemUchar4Point;
+    typedef TexturedPitchedMem<float4,cudaFilterModePoint,cudaReadModeElementType>
+            TexturedPitchedMemFloat4Point;
+
+    TexturedPitchedMemUchar4Linear pitched_mem_uchar4_linear_tex_cache;
+    TexturedPitchedMemUcharLinear  pitched_mem_uchar_linear_tex_cache;
+    TexturedPitchedMemUchar4Point  pitched_mem_uchar4_point_tex_cache;
+    TexturedPitchedMemFloat4Point  pitched_mem_float4_point_tex_cache;
 };
 
 /*
@@ -117,3 +168,4 @@ extern GlobalData global_data;
 
 }; // namespace depthMap
 }; // namespace aliceVision
+
