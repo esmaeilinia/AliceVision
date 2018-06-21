@@ -32,8 +32,6 @@ texture<float, 2, cudaReadModeElementType> depthsTex;
 
 texture<float, 2, cudaReadModeElementType> depthsTex1;
 
-// texture<float4, 2, cudaReadModeElementType> normalsTex;
-
 texture<float, 2, cudaReadModeElementType> sliceTex;
 
 texture<float2, 2, cudaReadModeElementType> sliceTexFloat2;
@@ -43,12 +41,6 @@ texture<unsigned char, 2, cudaReadModeElementType> sliceTexUChar;
 texture<uint2, 2, cudaReadModeElementType> sliceTexUInt2;
 
 texture<unsigned int, 2, cudaReadModeElementType> sliceTexUInt;
-
-// texture<uchar4, 2, cudaReadModeElementType> rTexU4;
-
-// texture<uchar4, 2, cudaReadModeElementType> tTexU4;
-
-// texture<float4, 2, cudaReadModeElementType> f4Tex;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 

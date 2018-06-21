@@ -34,8 +34,6 @@ extern texture<float, 2, cudaReadModeElementType> depthsTex;
 
 extern texture<float, 2, cudaReadModeElementType> depthsTex1;
 
-// extern texture<float4, 2, cudaReadModeElementType> normalsTex;
-
 extern texture<float, 2, cudaReadModeElementType> sliceTex;
 
 extern texture<float2, 2, cudaReadModeElementType> sliceTexFloat2;
